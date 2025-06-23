@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Login - {{ app_name }}{% endblock %}
+{% block body_class %}login-page{% endblock %}
+
+{% block header_title %}Accesso{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="app-logo">
+                <h1>🚗 MasterWash</h1>
+                <p>Sistema Gestione Abbonamenti</p>
+            </div>
+        </div>
+        
+        <form method="POST" class="login-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.username.label(class="form-label") }}
+                {{ form.username(class="form-input", placeholder="Inserisci il tuo username", autocomplete="username", autofocus="") }}
+                {% if form.username.errors %}
+                    <div class="form-errors">
+                        {% for error in form.username.errors %}
+                            <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-input", placeholder="Inserisci la tua password", autocomplete="current-password") }}
+                {% if form.password.errors %}
+                    <div class="form-errors">
+                        {% for error in form.password.errors %}
+                            <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    {{ form.remember_me() }}
+                    {{ form.remember_me.label() }}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary btn-block") }}
+            </div>
+        </form>
+        
+        <div class="login-footer">
+            <p class="login-info">
+                <strong>Credenziali di default:</strong><br>
+                Username: admin | Password: admin123<br>
+                Username: operatore1 | Password: operatore123
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-focus sull'input username
+document.addEventListener('DOMContentLoaded', function() {
+    const usernameInput = document.getElementById('username');
+    if (usernameInput) {
+        usernameInput.focus();
+    }
+});
+
+// Gestione enter per passare al campo successivo
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const form = e.target.form;
+        const index = Array.prototype.indexOf.call(form, e.target);
+        if (form.elements[index + 1]) {
+            form.elements[index + 1].focus();
+        }
+    }
+});
+</script>
+{% endblock %}

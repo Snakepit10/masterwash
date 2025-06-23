@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}Nuovo Abbonamento - {{ app_name }}{% endblock %}
+
+{% block header_title %}Nuovo Abbonamento{% endblock %}
+
+{% block content %}
+<div class="abbonamento-container">
+    <form method="POST" class="abbonamento-form" id="abbonamentoForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- Selezione Cliente -->
+        <div class="form-section">
+            <h3>👤 Cliente</h3>
+            
+            <div class="form-group">
+                {{ form.cliente_id.label(class="form-label") }}
+                {{ form.cliente_id(class="form-select", id="clienteSelect") }}
+            </div>
+            
+            <!-- Campi Nuovo Cliente -->
+            <div id="nuovoClienteFields" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        {{ form.nome.label(class="form-label") }}
+                        {{ form.nome(class="form-input", placeholder="Mario") }}
+                        {% if form.nome.errors %}
+                            <div class="form-errors">
+                                {% for error in form.nome.errors %}
+                                    <span class="form-error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.cognome.label(class="form-label") }}
+                        {{ form.cognome(class="form-input", placeholder="Rossi") }}
+                        {% if form.cognome.errors %}
+                            <div class="form-errors">
+                                {% for error in form.cognome.errors %}
+                                    <span class="form-error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.telefono.label(class="form-label") }}
+                    {{ form.telefono(class="form-input", placeholder="333 123 4567", id="telefonoInput") }}
+                    {% if form.telefono.errors %}
+                        <div class="form-errors">
+                            {% for error in form.telefono.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-secondary" id="checkClienteBtn" style="margin-top: 5px;">
+                        Verifica Cliente Esistente
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-input", placeholder="mario.rossi@email.com") }}
+                    {% if form.email.errors %}
+                        <div class="form-errors">
+                            {% for error in form.email.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dati Abbonamento -->
+        <div class="form-section">
+            <h3>🚗 Abbonamento</h3>
+            
+            <div class="form-group">
+                {{ form.targa.label(class="form-label") }}
+                {{ form.targa(class="form-input", placeholder="AB123CD", style="text-transform: uppercase;") }}
+                {% if form.targa.errors %}
+                    <div class="form-errors">
+                        {% for error in form.targa.errors %}
+                            <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.tipo_abbonamento.label(class="form-label") }}
+                    {{ form.tipo_abbonamento(class="form-select", id="tipoSelect") }}
+                    {% if form.tipo_abbonamento.errors %}
+                        <div class="form-errors">
+                            {% for error in form.tipo_abbonamento.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.accessi_totali.label(class="form-label") }}
+                    {{ form.accessi_totali(class="form-input", id="accessiInput", min="1", max="1000") }}
+                    {% if form.accessi_totali.errors %}
+                        <div class="form-errors">
+                            {% for error in form.accessi_totali.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Suggerimenti Prezzi -->
+            <div class="price-suggestions" id="priceSuggestions" style="display: none;">
+                <h4>💡 Prezzi Suggeriti</h4>
+                <div class="suggestion-buttons" id="suggestionButtons">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.prezzo.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-prefix">€</span>
+                        {{ form.prezzo(class="form-input", id="prezzoInput", step="0.01", min="0.01") }}
+                    </div>
+                    {% if form.prezzo.errors %}
+                        <div class="form-errors">
+                            {% for error in form.prezzo.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.stato_pagamento.label(class="form-label") }}
+                    {{ form.stato_pagamento(class="form-select") }}
+                    {% if form.stato_pagamento.errors %}
+                        <div class="form-errors">
+                            {% for error in form.stato_pagamento.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                {{ form.codice_nfc.label(class="form-label") }}
+                {{ form.codice_nfc(class="form-input", placeholder="Lascia vuoto per generazione automatica", style="text-transform: uppercase;") }}
+                {% if form.codice_nfc.errors %}
+                    <div class="form-errors">
+                        {% for error in form.codice_nfc.errors %}
+                            <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <button type="button" class="btn btn-sm btn-secondary" id="generateNFCBtn">
+                    Genera Codice
+                </button>
+            </div>
+        </div>
+        
+        <!-- Riepilogo -->
+        <div class="form-section" id="riepilogoSection" style="display: none;">
+            <h3>📋 Riepilogo</h3>
+            <div class="riepilogo-card">
+                <div class="riepilogo-content" id="riepilogoContent">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Azioni -->
+        <div class="form-actions">
+            {{ form.submit(class="btn btn-primary btn-lg btn-block") }}
+            <a href="{{ url_for('abbonamenti.index') }}" class="btn btn-secondary btn-lg btn-block">
+                Annulla
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clienteSelect = document.getElementById('clienteSelect');
+    const nuovoClienteFields = document.getElementById('nuovoClienteFields');
+    const telefonoInput = document.getElementById('telefonoInput');
+    const checkClienteBtn = document.getElementById('checkClienteBtn');
+    const tipoSelect = document.getElementById('tipoSelect');
+    const accessiInput = document.getElementById('accessiInput');
+    const prezzoInput = document.getElementById('prezzoInput');
+    const priceSuggestions = document.getElementById('priceSuggestions');
+    const suggestionButtons = document.getElementById('suggestionButtons');
+    const generateNFCBtn = document.getElementById('generateNFCBtn');
+    const riepilogoSection = document.getElementById('riepilogoSection');
+    const riepilogoContent = document.getElementById('riepilogoContent');
+    
+    let prezziSuggeriti = {};
+    
+    // Gestione selezione cliente
+    clienteSelect.addEventListener('change', function() {
+        if (this.value === '0') {
+            nuovoClienteFields.style.display = 'block';
+            makeFieldsRequired(true);
+        } else {
+            nuovoClienteFields.style.display = 'none';
+            makeFieldsRequired(false);
+        }
+        updateRiepilogo();
+    });
+    
+    // Trigger iniziale
+    if (clienteSelect.value === '0') {
+        nuovoClienteFields.style.display = 'block';
+        makeFieldsRequired(true);
+    }
+    
+    function makeFieldsRequired(required) {
+        const fields = ['nome', 'cognome', 'telefono'];
+        fields.forEach(fieldName => {
+            const field = document.getElementById(fieldName) || document.querySelector(`[name="${fieldName}"]`);
+            if (field) {
+                if (required) {
+                    field.setAttribute('required', '');
+                } else {
+                    field.removeAttribute('required');
+                }
+            }
+        });
+    }
+    
+    // Verifica cliente esistente per telefono
+    checkClienteBtn.addEventListener('click', function() {
+        const telefono = telefonoInput.value.trim();
+        if (!telefono) {
+            MasterWash.showNotification('Inserisci un numero di telefono', 'warning');
+            return;
+        }
+        
+        MasterWash.showLoading('Verifica cliente...');
+        
+        fetch(`/abbonamenti/api/cliente/${encodeURIComponent(telefono)}`)
+            .then(response => response.json())
+            .then(data => {
+                MasterWash.hideLoading();
+                
+                if (data.found) {
+                    const cliente = data.cliente;
+                    
+                    // Popola i campi con i dati esistenti
+                    document.querySelector('[name="nome"]').value = cliente.nome;
+                    document.querySelector('[name="cognome"]').value = cliente.cognome;
+                    document.querySelector('[name="telefono"]').value = cliente.telefono;
+                    document.querySelector('[name="email"]').value = cliente.email;
+                    
+                    MasterWash.showNotification(`Cliente trovato: ${cliente.nome} ${cliente.cognome}`, 'success');
+                    updateRiepilogo();
+                } else {
+                    MasterWash.showNotification('Nessun cliente trovato con questo numero', 'info');
+                }
+            })
+            .catch(error => {
+                MasterWash.hideLoading();
+                MasterWash.showNotification('Errore durante la verifica', 'error');
+                console.error('Errore:', error);
+            });
+    });
+    
+    // Carica prezzi suggeriti
+    fetch('/abbonamenti/api/prezzi-suggeriti')
+        .then(response => response.json())
+        .then(data => {
+            prezziSuggeriti = data;
+            updatePriceSuggestions();
+        })
+        .catch(error => {
+            console.error('Errore caricamento prezzi:', error);
+        });
+    
+    // Aggiorna suggerimenti prezzi
+    function updatePriceSuggestions() {
+        const tipo = tipoSelect.value;
+        const accessi = accessiInput.value;
+        
+        if (tipo && prezziSuggeriti[tipo]) {
+            const suggestions = prezziSuggeriti[tipo];
+            suggestionButtons.innerHTML = '';
+            
+            Object.entries(suggestions).forEach(([numAccessi, prezzo]) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-secondary suggestion-btn';
+                btn.textContent = `${numAccessi} accessi - €${prezzo.toFixed(2)}`;
+                btn.addEventListener('click', function() {
+                    accessiInput.value = numAccessi;
+                    prezzoInput.value = prezzo.toFixed(2);
+                    updateRiepilogo();
+                });
+                suggestionButtons.appendChild(btn);
+            });
+            
+            priceSuggestions.style.display = 'block';
+        } else {
+            priceSuggestions.style.display = 'none';
+        }
+    }
+    
+    // Event listeners per aggiornamenti
+    tipoSelect.addEventListener('change', updatePriceSuggestions);
+    accessiInput.addEventListener('input', updatePriceSuggestions);
+    
+    // Genera codice NFC casuale
+    generateNFCBtn.addEventListener('click', function() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        document.querySelector('[name="codice_nfc"]').value = result;
+        updateRiepilogo();
+    });
+    
+    // Aggiorna riepilogo
+    function updateRiepilogo() {
+        const isNuovoCliente = clienteSelect.value === '0';
+        const nome = isNuovoCliente ? document.querySelector('[name="nome"]').value : 
+                     clienteSelect.options[clienteSelect.selectedIndex].text.split(' - ')[0];
+        const targa = document.querySelector('[name="targa"]').value;
+        const tipo = tipoSelect.options[tipoSelect.selectedIndex].text;
+        const accessi = accessiInput.value;
+        const prezzo = prezzoInput.value;
+        const stato = document.querySelector('[name="stato_pagamento"]').options[document.querySelector('[name="stato_pagamento"]').selectedIndex].text;
+        const nfc = document.querySelector('[name="codice_nfc"]').value || 'Auto-generato';
+        
+        if (nome || targa || accessi || prezzo) {
+            const today = new Date();
+            const dataInizio = today.toLocaleDateString('it-IT');
+            
+            let dataFine = new Date(today);
+            if (tipoSelect.value === 'mensile') {
+                dataFine.setDate(dataFine.getDate() + 30);
+            } else if (tipoSelect.value === 'trimestrale') {
+                dataFine.setDate(dataFine.getDate() + 90);
+            } else if (tipoSelect.value === 'annuale') {
+                dataFine.setDate(dataFine.getDate() + 365);
+            }
+            
+            riepilogoContent.innerHTML = `
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Cliente:</span>
+                    <span class="riepilogo-value">${nome || 'Da completare'}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Targa:</span>
+                    <span class="riepilogo-value">${targa || 'Da completare'}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Tipo:</span>
+                    <span class="riepilogo-value">${tipo}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Periodo:</span>
+                    <span class="riepilogo-value">${dataInizio} - ${dataFine.toLocaleDateString('it-IT')}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Accessi:</span>
+                    <span class="riepilogo-value">${accessi || '0'}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Prezzo:</span>
+                    <span class="riepilogo-value">€${prezzo || '0.00'}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Stato:</span>
+                    <span class="riepilogo-value">${stato}</span>
+                </div>
+                <div class="riepilogo-item">
+                    <span class="riepilogo-label">Codice NFC:</span>
+                    <span class="riepilogo-value">${nfc}</span>
+                </div>
+            `;
+            
+            riepilogoSection.style.display = 'block';
+        } else {
+            riepilogoSection.style.display = 'none';
+        }
+    }
+    
+    // Event listeners per aggiornamento riepilogo
+    const fieldsToWatch = ['nome', 'cognome', 'telefono', 'targa', 'accessi_totali', 'prezzo', 'stato_pagamento', 'codice_nfc'];
+    fieldsToWatch.forEach(fieldName => {
+        const field = document.querySelector(`[name="${fieldName}"]`);
+        if (field) {
+            field.addEventListener('input', updateRiepilogo);
+            field.addEventListener('change', updateRiepilogo);
+        }
+    });
+    
+    // Validazione form
+    document.getElementById('abbonamentoForm').addEventListener('submit', function(e) {
+        const isNuovoCliente = clienteSelect.value === '0';
+        
+        if (isNuovoCliente) {
+            const nome = document.querySelector('[name="nome"]').value.trim();
+            const cognome = document.querySelector('[name="cognome"]').value.trim();
+            const telefono = document.querySelector('[name="telefono"]').value.trim();
+            
+            if (!nome || !cognome || !telefono) {
+                e.preventDefault();
+                MasterWash.showNotification('Completa tutti i campi del cliente', 'error');
+                return;
+            }
+        }
+        
+        const targa = document.querySelector('[name="targa"]').value.trim();
+        const accessi = document.querySelector('[name="accessi_totali"]').value;
+        const prezzo = document.querySelector('[name="prezzo"]').value;
+        
+        if (!targa || !accessi || !prezzo) {
+            e.preventDefault();
+            MasterWash.showNotification('Completa tutti i campi dell\'abbonamento', 'error');
+            return;
+        }
+        
+        MasterWash.showLoading('Creazione abbonamento...');
+    });
+    
+    // Formattazione automatica
+    document.querySelector('[name="targa"]').addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/\s+/g, '');
+    });
+    
+    document.querySelector('[name="codice_nfc"]').addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    });
+});
+</script>
+
+<style>
+.abbonamento-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-section {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.form-section h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-prefix {
+    position: absolute;
+    left: var(--spacing-md);
+    color: var(--gray-600);
+    font-weight: 500;
+    z-index: 1;
+}
+
+.input-group .form-input {
+    padding-left: 40px;
+}
+
+.price-suggestions {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) 0;
+}
+
+.price-suggestions h4 {
+    font-size: 1rem;
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-sm);
+}
+
+.suggestion-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.suggestion-btn {
+    font-size: 0.875rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.riepilogo-card {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+}
+
+.riepilogo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.riepilogo-item:last-child {
+    border-bottom: none;
+}
+
+.riepilogo-label {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.riepilogo-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 767px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .suggestion-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

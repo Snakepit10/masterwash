@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Verifica Accessi - {{ app_name }}{% endblock %}
+
+{% block header_title %}Verifica Accessi{% endblock %}
+
+{% block content %}
+<div class="accessi-container">
+    <div class="verifica-card">
+        <div class="verifica-header">
+            <h2>🔍 Scansiona Codice NFC</h2>
+            <p>Inserisci o scansiona il codice NFC per verificare l'abbonamento</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('accessi.verifica') }}" class="verifica-form" id="verificaForm">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.codice_nfc.label(class="form-label visually-hidden") }}
+                {{ form.codice_nfc(class="form-input form-input-lg nfc-input", 
+                                   placeholder="Inserisci codice NFC (8 caratteri)", 
+                                   autocomplete="off",
+                                   autofocus="",
+                                   maxlength="8") }}
+                {% if form.codice_nfc.errors %}
+                    <div class="form-errors">
+                        {% for error in form.codice_nfc.errors %}
+                            <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary btn-lg btn-block") }}
+            </div>
+        </form>
+        
+        <!-- Simulatore NFC per test -->
+        <div class="nfc-simulator">
+            <h3>🧪 Simulatore NFC (Test)</h3>
+            <div class="simulator-buttons">
+                <button onclick="simulateNFC('12345678')" class="btn btn-sm btn-secondary">Test 1</button>
+                <button onclick="simulateNFC('87654321')" class="btn btn-sm btn-secondary">Test 2</button>
+                <button onclick="simulateNFC('ABCD1234')" class="btn btn-sm btn-secondary">Test 3</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risultato Verifica Rapida (AJAX) -->
+    <div class="verifica-result" id="verificaResult" style="display: none;">
+        <div class="result-card">
+            <div class="result-header">
+                <h3 id="resultTitle">Cliente Trovato</h3>
+                <button class="result-close" onclick="clearResult()">✕</button>
+            </div>
+            <div class="result-content" id="resultContent">
+                <!-- Contenuto dinamico -->
+            </div>
+            <div class="result-actions" id="resultActions">
+                <!-- Azioni dinamiche -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Istruzioni -->
+    <div class="instructions-card">
+        <h3>📖 Istruzioni</h3>
+        <ol>
+            <li>Inserisci il codice NFC nel campo sopra</li>
+            <li>Premi "Verifica" o Enter</li>
+            <li>Controlla i dati dell'abbonamento</li>
+            <li>Se tutto OK, clicca "Registra Accesso"</li>
+        </ol>
+        
+        <div class="shortcuts">
+            <h4>⌨️ Scorciatoie</h4>
+            <ul>
+                <li><kbd>Enter</kbd> - Avvia verifica</li>
+                <li><kbd>Esc</kbd> - Pulisci campo</li>
+                <li><kbd>F5</kbd> - Refresh pagina</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Accesso Rapido -->
+    <div class="quick-access">
+        <h3>🚀 Accesso Rapido</h3>
+        <div class="quick-buttons">
+            <a href="{{ url_for('accessi.rapido') }}" class="btn btn-info">
+                ⚡ Modalità Rapida
+            </a>
+            <a href="{{ url_for('abbonamenti.index') }}" class="btn btn-secondary">
+                📋 Lista Abbonamenti
+            </a>
+            <a href="{{ url_for('accessi.storico') }}" class="btn btn-secondary">
+                📅 Storico Accessi
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nfcInput = document.getElementById('codice_nfc');
+    const form = document.getElementById('verificaForm');
+    const resultDiv = document.getElementById('verificaResult');
+    
+    // Auto-focus sull'input NFC
+    nfcInput.focus();
+    
+    // Convertimento automatico in maiuscolo
+    nfcInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+        
+        // Verifica rapida quando raggiunge 8 caratteri
+        if (this.value.length === 8) {
+            verificaRapida(this.value);
+        }
+    });
+    
+    // Gestione tasti
+    nfcInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            clearResult();
+        }
+    });
+    
+    // Submit form
+    form.addEventListener('submit', function(e) {
+        if (nfcInput.value.length !== 8) {
+            e.preventDefault();
+            showError('Il codice NFC deve essere di 8 caratteri');
+        }
+    });
+    
+    // Verifica rapida via AJAX
+    function verificaRapida(codice) {
+        showLoading();
+        
+        fetch(`/accessi/api/verifica-nfc?codice=${codice}`)
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    showResult(data);
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showError('Errore di connessione');
+                console.error('Errore:', error);
+            });
+    }
+    
+    // Mostra risultato verifica
+    function showResult(data) {
+        const abbonamento = data.abbonamento;
+        const resultContent = document.getElementById('resultContent');
+        const resultActions = document.getElementById('resultActions');
+        
+        // Contenuto
+        resultContent.innerHTML = `
+            <div class="client-info">
+                <h4>${abbonamento.cliente}</h4>
+                <div class="client-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Targa:</span>
+                        <span class="detail-value targa">${abbonamento.targa}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Accessi:</span>
+                        <span class="detail-value badge badge-${abbonamento.colore_accessi}">
+                            ${abbonamento.accessi_rimanenti} rimanenti
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Scadenza:</span>
+                        <span class="detail-value ${abbonamento.is_in_scadenza ? 'text-warning' : ''}">
+                            ${abbonamento.giorni_scadenza} giorni
+                        </span>
+                    </div>
+                    ${abbonamento.ultimo_accesso ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Ultimo accesso:</span>
+                        <span class="detail-value">${abbonamento.ultimo_accesso.data_ora}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${data.messaggi.length > 0 ? `
+            <div class="messages">
+                ${data.messaggi.map(msg => `<div class="message warning">${msg}</div>`).join('')}
+            </div>
+            ` : ''}
+        `;
+        
+        // Azioni
+        if (data.success && !abbonamento.is_scaduto && abbonamento.accessi_rimanenti > 0) {
+            resultActions.innerHTML = `
+                <button onclick="registraAccesso(${abbonamento.id})" class="btn btn-success btn-lg">
+                    ✅ Registra Accesso
+                </button>
+                <button onclick="clearResult()" class="btn btn-secondary">
+                    Annulla
+                </button>
+            `;
+        } else {
+            resultActions.innerHTML = `
+                <button onclick="clearResult()" class="btn btn-secondary">
+                    Chiudi
+                </button>
+            `;
+        }
+        
+        // Mostra risultato
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth' });
+        
+        // Vibrazione feedback (se supportata)
+        if (navigator.vibrate) {
+            navigator.vibrate(data.success ? [100] : [200, 100, 200]);
+        }
+    }
+    
+    // Registra accesso via AJAX
+    window.registraAccesso = function(abbonamentoId) {
+        showLoading();
+        
+        fetch('/accessi/api/registra-accesso', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify({
+                abbonamento_id: abbonamentoId,
+                note: ''
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            
+            if (data.success) {
+                showSuccess(data.message);
+                clearResult();
+                nfcInput.value = '';
+                nfcInput.focus();
+            } else {
+                showError(data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showError('Errore durante la registrazione');
+            console.error('Errore:', error);
+        });
+    };
+    
+    // Pulisci risultato
+    window.clearResult = function() {
+        resultDiv.style.display = 'none';
+        nfcInput.value = '';
+        nfcInput.focus();
+    };
+    
+    // Simulatore NFC per test
+    window.simulateNFC = function(codice) {
+        nfcInput.value = codice;
+        verificaRapida(codice);
+    };
+    
+    // Utility functions
+    function showError(message) {
+        showFlash('error', message);
+    }
+    
+    function showSuccess(message) {
+        showFlash('success', message);
+    }
+    
+    function showFlash(type, message) {
+        const flashHtml = `
+            <div class="flash flash-${type}" onclick="this.remove()">
+                <span class="flash-icon">${type === 'success' ? '✅' : '❌'}</span>
+                <span class="flash-message">${message}</span>
+                <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+        `;
+        
+        const flashContainer = document.querySelector('.flash-messages') || 
+            (() => {
+                const container = document.createElement('div');
+                container.className = 'flash-messages';
+                document.querySelector('.main-content').prepend(container);
+                return container;
+            })();
+        
+        flashContainer.insertAdjacentHTML('beforeend', flashHtml);
+        
+        // Auto-remove dopo 5 secondi
+        setTimeout(() => {
+            const flash = flashContainer.querySelector('.flash:last-child');
+            if (flash) flash.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

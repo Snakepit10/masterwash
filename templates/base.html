@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="blue">
+    <meta name="theme-color" content="#2563eb">
+    
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+    
+    <!-- CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                {% if current_user.is_authenticated %}
+                    <button class="menu-toggle" onclick="toggleMenu()">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                {% endif %}
+                <h1 class="header-title">
+                    {% block header_title %}{{ app_name }}{% endblock %}
+                </h1>
+            </div>
+            <div class="header-right">
+                {% if current_user.is_authenticated %}
+                    <span class="user-info">{{ current_user.nome }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Logout">
+                        🚪
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Menu -->
+    {% if current_user.is_authenticated %}
+    <nav class="nav-menu" id="navMenu">
+        <div class="nav-overlay" onclick="toggleMenu()"></div>
+        <div class="nav-content">
+            <div class="nav-header">
+                <h3>Menu</h3>
+                <button class="nav-close" onclick="toggleMenu()">✕</button>
+            </div>
+            <div class="nav-items">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    📊 Dashboard
+                </a>
+                <a href="{{ url_for('accessi.index') }}" class="nav-item {% if request.endpoint.startswith('accessi') %}active{% endif %}">
+                    🔍 Verifica Accessi
+                </a>
+                <a href="{{ url_for('abbonamenti.nuovo') }}" class="nav-item {% if request.endpoint == 'abbonamenti.nuovo' %}active{% endif %}">
+                    ➕ Nuovo Abbonamento
+                </a>
+                <a href="{{ url_for('abbonamenti.index') }}" class="nav-item {% if request.endpoint == 'abbonamenti.index' %}active{% endif %}">
+                    📋 Gestione Abbonamenti
+                </a>
+                <a href="{{ url_for('accessi.storico') }}" class="nav-item {% if request.endpoint == 'accessi.storico' %}active{% endif %}">
+                    📅 Storico Accessi
+                </a>
+                <a href="{{ url_for('stampa.configurazione') }}" class="nav-item {% if request.endpoint.startswith('stampa') %}active{% endif %}">
+                    🖨️ Stampa
+                </a>
+                {% if current_user.is_admin() %}
+                <div class="nav-divider"></div>
+                <a href="#" class="nav-item">
+                    ⚙️ Amministrazione
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}" onclick="this.remove()">
+                        <span class="flash-icon">
+                            {% if category == 'success' %}✅
+                            {% elif category == 'error' %}❌
+                            {% elif category == 'warning' %}⚠️
+                            {% else %}ℹ️
+                            {% endif %}
+                        </span>
+                        <span class="flash-message">{{ message }}</span>
+                        <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bottom Navigation (Mobile) -->
+    {% if current_user.is_authenticated %}
+    <nav class="bottom-nav">
+        <a href="{{ url_for('dashboard.index') }}" class="bottom-nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+            <span class="bottom-nav-icon">📊</span>
+            <span class="bottom-nav-label">Dashboard</span>
+        </a>
+        <a href="{{ url_for('accessi.index') }}" class="bottom-nav-item {% if request.endpoint.startswith('accessi') %}active{% endif %}">
+            <span class="bottom-nav-icon">🔍</span>
+            <span class="bottom-nav-label">Accessi</span>
+        </a>
+        <a href="{{ url_for('abbonamenti.nuovo') }}" class="bottom-nav-item {% if request.endpoint == 'abbonamenti.nuovo' %}active{% endif %}">
+            <span class="bottom-nav-icon">➕</span>
+            <span class="bottom-nav-label">Nuovo</span>
+        </a>
+        <a href="{{ url_for('abbonamenti.index') }}" class="bottom-nav-item {% if request.endpoint == 'abbonamenti.index' %}active{% endif %}">
+            <span class="bottom-nav-icon">📋</span>
+            <span class="bottom-nav-label">Abbonamenti</span>
+        </a>
+    </nav>
+    {% endif %}
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Caricamento...</div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                .then(function(registration) {
+                    console.log('SW registered: ', registration);
+                })
+                .catch(function(registrationError) {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+
+{% block header_title %}Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    
+    <!-- Statistiche Principali -->
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="stat-icon">🔢</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.abbonamenti_attivi }}</div>
+                <div class="stat-label">Abbonamenti Attivi</div>
+            </div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.nuovi_abbonamenti_mese }}</div>
+                <div class="stat-label">Nuovi Questo Mese</div>
+            </div>
+        </div>
+        
+        <div class="stat-card warning">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.abbonamenti_in_scadenza }}</div>
+                <div class="stat-label">In Scadenza</div>
+            </div>
+        </div>
+        
+        <div class="stat-card danger">
+            <div class="stat-icon">❌</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.abbonamenti_scaduti }}</div>
+                <div class="stat-label">Scaduti</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Accessi Oggi -->
+    <div class="dashboard-section">
+        <h2 class="section-title">Accessi Oggi</h2>
+        <div class="stats-grid">
+            <div class="stat-card info">
+                <div class="stat-icon">🏁</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="accessiOggi">{{ stats.accessi_oggi }}</div>
+                    <div class="stat-label">Accessi Oggi</div>
+                </div>
+            </div>
+            
+            <div class="stat-card info">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.accessi_settimana }}</div>
+                    <div class="stat-label">Accessi Settimana</div>
+                </div>
+            </div>
+            
+            <div class="stat-card info">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.accessi_mese }}</div>
+                    <div class="stat-label">Accessi Mese</div>
+                </div>
+            </div>
+            
+            <div class="stat-card info">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.clienti_totali }}</div>
+                    <div class="stat-label">Clienti Totali</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Grafici -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3 class="chart-title">Accessi per Fascia Oraria (Ultimi 7 giorni)</h3>
+            <canvas id="accessiOrariChart"></canvas>
+        </div>
+        
+        <div class="chart-card">
+            <h3 class="chart-title">Nuovi Abbonamenti (Ultimi 12 mesi)</h3>
+            <canvas id="abbonamentiMensiliChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Abbonamenti in Scadenza -->
+    {% if abbonamenti_scadenza %}
+    <div class="dashboard-section">
+        <h2 class="section-title">⚠️ Abbonamenti in Scadenza</h2>
+        <div class="cards-list">
+            {% for abbonamento in abbonamenti_scadenza %}
+            <div class="alert-card warning">
+                <div class="alert-content">
+                    <div class="alert-header">
+                        <strong>{{ abbonamento.cliente.nome_completo }}</strong>
+                        <span class="alert-badge">{{ abbonamento.giorni_alla_scadenza }} giorni</span>
+                    </div>
+                    <div class="alert-details">
+                        <span>{{ abbonamento.targa | targa }}</span> • 
+                        <span>{{ abbonamento.accessi_rimanenti }} accessi</span> • 
+                        <span>Scade il {{ abbonamento.data_fine | date }}</span>
+                    </div>
+                </div>
+                <div class="alert-actions">
+                    <a href="{{ url_for('abbonamenti.dettaglio', id=abbonamento.id) }}" class="btn btn-sm btn-primary">Dettagli</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Ultimi Accessi -->
+    <div class="dashboard-section">
+        <h2 class="section-title">📋 Ultimi Accessi</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Orario</th>
+                        <th>Cliente</th>
+                        <th>Targa</th>
+                        <th>Accessi Rimanenti</th>
+                    </tr>
+                </thead>
+                <tbody id="ultimiAccessiTable">
+                    {% for accesso in ultimi_accessi %}
+                    <tr>
+                        <td>{{ accesso.data_ora | datetime('%H:%M') }}</td>
+                        <td>{{ accesso.abbonamento.cliente.nome_completo }}</td>
+                        <td><span class="badge badge-info">{{ accesso.abbonamento.targa | targa }}</span></td>
+                        <td>
+                            <span class="badge badge-{{ accesso.abbonamento.colore_accessi }}">
+                                {{ accesso.abbonamento.accessi_rimanenti }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Top Clienti -->
+    {% if top_clienti %}
+    <div class="dashboard-section">
+        <h2 class="section-title">🏆 Top Clienti del Mese</h2>
+        <div class="cards-list">
+            {% for cliente in top_clienti %}
+            <div class="info-card">
+                <div class="info-content">
+                    <div class="info-header">
+                        <strong>{{ cliente.nome }} {{ cliente.cognome }}</strong>
+                        <span class="info-badge">{{ cliente.accessi_count }} accessi</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Azioni Rapide -->
+    <div class="dashboard-section">
+        <h2 class="section-title">🚀 Azioni Rapide</h2>
+        <div class="quick-actions">
+            <a href="{{ url_for('accessi.index') }}" class="quick-action primary">
+                <div class="quick-action-icon">🔍</div>
+                <div class="quick-action-label">Verifica Accesso</div>
+            </a>
+            <a href="{{ url_for('abbonamenti.nuovo') }}" class="quick-action success">
+                <div class="quick-action-icon">➕</div>
+                <div class="quick-action-label">Nuovo Abbonamento</div>
+            </a>
+            <a href="{{ url_for('abbonamenti.index') }}" class="quick-action info">
+                <div class="quick-action-icon">📋</div>
+                <div class="quick-action-label">Gestione Abbonamenti</div>
+            </a>
+            <a href="{{ url_for('stampa.configurazione') }}" class="quick-action warning">
+                <div class="quick-action-icon">🖨️</div>
+                <div class="quick-action-label">Stampa</div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Configura Chart.js
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+    
+    // Grafico Accessi Orari
+    fetch('/api/accessi-orari')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('accessiOrariChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Accessi',
+                        data: data.data,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Errore caricamento grafico accessi:', error));
+    
+    // Grafico Abbonamenti Mensili
+    fetch('/api/abbonamenti-mensili')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('abbonamentiMensiliChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Nuovi Abbonamenti',
+                        data: data.data,
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Errore caricamento grafico abbonamenti:', error));
+    
+    // Aggiornamento statistiche in tempo reale ogni 30 secondi
+    setInterval(function() {
+        fetch('/api/stats-realtime')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('accessiOggi').textContent = data.accessi_oggi;
+                
+                // Aggiorna ultimo accesso se presente
+                if (data.ultimo_accesso) {
+                    // Trova e aggiorna la prima riga della tabella
+                    const firstRow = document.querySelector('#ultimiAccessiTable tr:first-child');
+                    if (firstRow) {
+                        firstRow.cells[0].textContent = data.ultimo_accesso.data_ora;
+                        firstRow.cells[1].textContent = data.ultimo_accesso.cliente;
+                        firstRow.cells[2].innerHTML = `<span class="badge badge-info">${data.ultimo_accesso.targa}</span>`;
+                    }
+                }
+            })
+            .catch(error => console.error('Errore aggiornamento stats:', error));
+    }, 30000);
+    
+});
+</script>
+{% endblock %}
