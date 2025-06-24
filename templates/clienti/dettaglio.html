@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cliente.nome_completo }} - Dettaglio Cliente - {{ super() }}{% endblock %}
+
+{% block header_title %}👤 {{ cliente.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="cliente-dettaglio-container">
+    
+    <!-- Informazioni Cliente -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>📋 Informazioni Cliente</h2>
+            <div class="cliente-status">
+                {% if stats.abbonamenti_attivi > 0 %}
+                    <span class="status-badge active">Cliente Attivo</span>
+                {% else %}
+                    <span class="status-badge inactive">Nessun Abbonamento</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Nome Completo:</span>
+                    <span class="value">{{ cliente.nome_completo }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Telefono:</span>
+                    <span class="value">{{ cliente.telefono }}</span>
+                </div>
+                {% if cliente.email %}
+                <div class="info-item">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ cliente.email }}</span>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <span class="label">Tipo Cliente:</span>
+                    <span class="value">{{ cliente.tipo_cliente_display }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Cliente dal:</span>
+                    <span class="value">{{ cliente.data_registrazione.strftime('%d/%m/%Y') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiche Generali -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.abbonamenti_totali }}</div>
+                <div class="stat-label">Abbonamenti Totali</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.abbonamenti_attivi }}</div>
+                <div class="stat-label">Abbonamenti Attivi</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">🔢</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.accessi_totali_utilizzati }}</div>
+                <div class="stat-label">Accessi Utilizzati</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.accessi_rimanenti }}</div>
+                <div class="stat-label">Accessi Rimanenti</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+                <div class="stat-number">€ {{ "%.2f"|format(stats.importo_totale_speso) }}</div>
+                <div class="stat-label">Totale Speso</div>
+            </div>
+        </div>
+        
+        {% if stats.importo_dovuto > 0 %}
+        <div class="stat-card warning">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-content">
+                <div class="stat-number">€ {{ "%.2f"|format(stats.importo_dovuto) }}</div>
+                <div class="stat-label">Importo Dovuto</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Abbonamenti Attivi -->
+    {% if abbonamenti_attivi %}
+    <div class="info-card">
+        <div class="card-header">
+            <h2>🚗 Abbonamenti Attivi ({{ abbonamenti_attivi|length }})</h2>
+        </div>
+        <div class="card-body">
+            <div class="abbonamenti-grid">
+                {% for abbonamento in abbonamenti_attivi %}
+                <div class="abbonamento-card {% if abbonamento.is_in_scadenza %}warning{% endif %}">
+                    <div class="abbonamento-header">
+                        <div class="abbonamento-main">
+                            <h4 class="targa">{{ abbonamento.targa }}</h4>
+                            <span class="tipo">{{ abbonamento.tipo_abbonamento | title }}</span>
+                        </div>
+                        <div class="abbonamento-status">
+                            {% if abbonamento.is_in_scadenza %}
+                                <span class="status-badge warning">In Scadenza</span>
+                            {% else %}
+                                <span class="status-badge success">Attivo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="abbonamento-progress">
+                        <div class="progress-info">
+                            <span>Accessi: {{ abbonamento.accessi_utilizzati }}/{{ abbonamento.accessi_totali }}</span>
+                            <span class="rimanenti {{ abbonamento.colore_accessi }}">{{ abbonamento.accessi_rimanenti }} rimasti</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ (abbonamento.accessi_utilizzati / abbonamento.accessi_totali * 100) if abbonamento.accessi_totali > 0 else 0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="abbonamento-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Scadenza:</span>
+                            <span class="detail-value {% if abbonamento.is_in_scadenza %}warning{% endif %}">
+                                {{ abbonamento.data_fine.strftime('%d/%m/%Y') }}
+                                {% if abbonamento.is_in_scadenza %}
+                                    ({{ abbonamento.giorni_alla_scadenza }} giorni)
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Pagamento:</span>
+                            <span class="detail-value {{ 'success' if abbonamento.stato_pagamento == 'pagato' else 'warning' }}">
+                                {% if abbonamento.stato_pagamento == 'pagato' %}
+                                    ✅ Pagato (€ {{ "%.2f"|format(abbonamento.prezzo) }})
+                                {% else %}
+                                    ⏳ Da pagare (€ {{ "%.2f"|format(abbonamento.prezzo) }})
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Codice NFC:</span>
+                            <span class="detail-value nfc-code">{{ abbonamento.codice_nfc }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="abbonamento-actions">
+                        <a href="{{ url_for('abbonamenti.dettaglio', id=abbonamento.id) }}" 
+                           class="btn btn-sm btn-primary">Dettaglio</a>
+                        <a href="{{ url_for('abbonamenti.modifica', id=abbonamento.id) }}" 
+                           class="btn btn-sm btn-secondary">Modifica</a>
+                        {% if not abbonamento.is_scaduto %}
+                        <form method="POST" action="{{ url_for('abbonamenti.rinnova', id=abbonamento.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-success" 
+                                    onclick="return confirm('Rinnovare l\'abbonamento?')">Rinnova</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Abbonamenti in Scadenza -->
+    {% if abbonamenti_in_scadenza %}
+    <div class="info-card warning">
+        <div class="card-header">
+            <h2>⚠️ Abbonamenti in Scadenza ({{ abbonamenti_in_scadenza|length }})</h2>
+        </div>
+        <div class="card-body">
+            <div class="scadenze-list">
+                {% for abbonamento in abbonamenti_in_scadenza %}
+                <div class="scadenza-item">
+                    <div class="scadenza-info">
+                        <span class="targa">{{ abbonamento.targa }}</span>
+                        <span class="giorni">{{ abbonamento.giorni_alla_scadenza }} giorni alla scadenza</span>
+                    </div>
+                    <div class="scadenza-actions">
+                        <a href="{{ url_for('abbonamenti.dettaglio', id=abbonamento.id) }}" 
+                           class="btn btn-sm btn-warning">Gestisci</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Storico Abbonamenti -->
+    {% if abbonamenti %}
+    <div class="info-card">
+        <div class="card-header">
+            <h2>📚 Storico Abbonamenti</h2>
+            <span class="badge">{{ abbonamenti|length }} totali</span>
+        </div>
+        <div class="card-body">
+            <div class="abbonamenti-table">
+                <div class="table-header">
+                    <div class="col-targa">Targa</div>
+                    <div class="col-tipo">Tipo</div>
+                    <div class="col-periodo">Periodo</div>
+                    <div class="col-accessi">Accessi</div>
+                    <div class="col-stato">Stato</div>
+                    <div class="col-azioni">Azioni</div>
+                </div>
+                
+                {% for abbonamento in abbonamenti %}
+                <div class="table-row {% if not abbonamento.attivo %}inactive{% elif abbonamento.is_scaduto %}expired{% endif %}">
+                    <div class="col-targa">
+                        <span class="targa">{{ abbonamento.targa }}</span>
+                    </div>
+                    <div class="col-tipo">
+                        {{ abbonamento.tipo_abbonamento | title }}
+                    </div>
+                    <div class="col-periodo">
+                        <div class="periodo">
+                            <span class="data-inizio">{{ abbonamento.data_inizio.strftime('%d/%m/%Y') }}</span>
+                            <span class="separator">→</span>
+                            <span class="data-fine">{{ abbonamento.data_fine.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                    </div>
+                    <div class="col-accessi">
+                        <div class="accessi-info">
+                            <span class="utilizzati">{{ abbonamento.accessi_utilizzati }}</span>
+                            <span class="separator">/</span>
+                            <span class="totali">{{ abbonamento.accessi_totali }}</span>
+                        </div>
+                    </div>
+                    <div class="col-stato">
+                        {% if not abbonamento.attivo %}
+                            <span class="stato eliminato">Eliminato</span>
+                        {% elif abbonamento.is_scaduto %}
+                            <span class="stato scaduto">Scaduto</span>
+                        {% elif abbonamento.is_in_scadenza %}
+                            <span class="stato in-scadenza">In Scadenza</span>
+                        {% else %}
+                            <span class="stato attivo">Attivo</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-azioni">
+                        {% if abbonamento.attivo %}
+                        <a href="{{ url_for('abbonamenti.dettaglio', id=abbonamento.id) }}" 
+                           class="btn btn-xs btn-primary">Dettaglio</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Azioni -->
+    <div class="actions-card">
+        <div class="actions-grid">
+            <a href="{{ url_for('abbonamenti.nuovo') }}" 
+               class="btn btn-success btn-lg">
+                ➕ Nuovo Abbonamento
+            </a>
+            
+            <a href="{{ url_for('accessi.storico', search=cliente.telefono) }}" 
+               class="btn btn-info btn-lg">
+                📅 Storico Accessi
+            </a>
+            
+            {% if abbonamenti_attivi %}
+            <a href="{{ url_for('stampa.anteprima', abbonamento_id=abbonamenti_attivi[0].id) }}" 
+               class="btn btn-secondary btn-lg">
+                🖨️ Stampa Ricevuta
+            </a>
+            {% endif %}
+            
+            <a href="{{ url_for('clienti.index') }}" class="btn btn-outline btn-lg">
+                ← Torna ai Clienti
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.cliente-dettaglio-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.info-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.info-card.warning {
+    border-color: var(--warning-color);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.info-card.warning .card-header {
+    background: var(--warning-light);
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--gray-900);
+    font-size: 1.25rem;
+}
+
+.cliente-status .status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge.active {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-badge.inactive {
+    background: var(--gray-400);
+    color: var(--white);
+}
+
+.card-body {
+    padding: var(--spacing-lg);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item .label {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.info-item .value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.stat-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.stat-card.warning {
+    border-color: var(--warning-color);
+    background: var(--warning-light);
+}
+
+.stat-icon {
+    font-size: 2rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-card.warning .stat-number {
+    color: var(--warning-dark);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.abbonamenti-grid {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.abbonamento-card {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    border: 1px solid var(--gray-200);
+}
+
+.abbonamento-card.warning {
+    border-color: var(--warning-color);
+    background: var(--warning-light);
+}
+
+.abbonamento-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.abbonamento-main h4 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-family: monospace;
+    font-size: 1.25rem;
+    color: var(--gray-900);
+}
+
+.tipo {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.status-badge.success {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-badge.warning {
+    background: var(--warning-color);
+    color: var(--white);
+}
+
+.abbonamento-progress {
+    margin-bottom: var(--spacing-md);
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.rimanenti.success {
+    color: var(--success-color);
+}
+
+.rimanenti.warning {
+    color: var(--warning-color);
+}
+
+.rimanenti.danger {
+    color: var(--danger-color);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+    transition: width 0.3s ease;
+}
+
+.abbonamento-details {
+    margin-bottom: var(--spacing-md);
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.detail-label {
+    color: var(--gray-600);
+}
+
+.detail-value {
+    font-weight: 500;
+}
+
+.detail-value.success {
+    color: var(--success-color);
+}
+
+.detail-value.warning {
+    color: var(--warning-color);
+}
+
+.nfc-code {
+    font-family: monospace;
+    background: var(--info-color);
+    color: var(--white);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.abbonamento-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.scadenze-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.scadenza-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: var(--white);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--warning-color);
+}
+
+.scadenza-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.scadenza-info .targa {
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.scadenza-info .giorni {
+    font-size: 0.875rem;
+    color: var(--warning-dark);
+}
+
+.abbonamenti-table {
+    display: flex;
+    flex-direction: column;
+}
+
+.table-header,
+.table-row {
+    display: grid;
+    grid-template-columns: 120px 100px 200px 80px 100px 80px;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+}
+
+.table-header {
+    font-weight: 600;
+    color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-200);
+    background: var(--gray-50);
+    padding: var(--spacing-md) 0;
+}
+
+.table-row {
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.table-row.inactive {
+    opacity: 0.6;
+}
+
+.table-row.expired {
+    background: var(--danger-light);
+}
+
+.periodo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.separator {
+    color: var(--gray-400);
+}
+
+.accessi-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.stato {
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stato.attivo {
+    background: var(--success-light);
+    color: var(--success-dark);
+}
+
+.stato.in-scadenza {
+    background: var(--warning-light);
+    color: var(--warning-dark);
+}
+
+.stato.scaduto {
+    background: var(--danger-light);
+    color: var(--danger-dark);
+}
+
+.stato.eliminato {
+    background: var(--gray-200);
+    color: var(--gray-600);
+}
+
+.actions-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .abbonamento-header {
+        flex-direction: column;
+        align-items: start;
+        gap: var(--spacing-sm);
+    }
+    
+    .table-header,
+    .table-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

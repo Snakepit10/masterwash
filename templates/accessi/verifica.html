@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}Verifica Abbonamento - {{ app_name }}{% endblock %}
+
+{% block header_title %}Risultato Verifica{% endblock %}
+
+{% block content %}
+<div class="verifica-container">
+    
+    <!-- Risultato Verifica -->
+    <div class="result-card {% if not stato_ok %}result-error{% endif %}">
+        <div class="result-header">
+            <div class="result-status">
+                {% if stato_ok %}
+                    <span class="status-icon success">✅</span>
+                    <h2 class="status-title">Abbonamento Valido</h2>
+                {% else %}
+                    <span class="status-icon error">❌</span>
+                    <h2 class="status-title">Abbonamento Non Valido</h2>
+                {% endif %}
+            </div>
+            <div class="result-nfc">
+                <span class="nfc-label">Codice NFC:</span>
+                <span class="nfc-code">{{ abbonamento.codice_nfc }}</span>
+            </div>
+        </div>
+        
+        <!-- Informazioni Cliente -->
+        <div class="client-section">
+            <h3>👤 Informazioni Cliente</h3>
+            <div class="client-info">
+                <div class="client-name">{{ abbonamento.cliente.nome_completo }}</div>
+                <div class="client-details">
+                    <span class="detail">📞 {{ abbonamento.cliente.telefono | telefono }}</span>
+                    {% if abbonamento.cliente.email %}
+                    <span class="detail">✉️ {{ abbonamento.cliente.email }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informazioni Veicolo -->
+        <div class="vehicle-section">
+            <h3>🚗 Informazioni Veicolo</h3>
+            <div class="vehicle-info">
+                <div class="targa-display">{{ abbonamento.targa | targa }}</div>
+                <div class="vehicle-details">
+                    <span class="detail">Tipo: {{ abbonamento.tipo_abbonamento | title }} {{ abbonamento.tipo_abbonamento | icona_tipo_abbonamento }}</span>
+                    <span class="detail">Prezzo: {{ abbonamento.prezzo | currency }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stato Abbonamento -->
+        <div class="status-section">
+            <h3>📊 Stato Abbonamento</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-number {% if abbonamento.accessi_rimanenti <= 2 %}danger{% elif abbonamento.accessi_rimanenti <= 5 %}warning{% else %}success{% endif %}">
+                        {{ abbonamento.accessi_rimanenti }}
+                    </div>
+                    <div class="status-label">Accessi Rimanenti</div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-number {% if abbonamento.giorni_alla_scadenza <= 3 %}danger{% elif abbonamento.giorni_alla_scadenza <= 7 %}warning{% else %}success{% endif %}">
+                        {{ abbonamento.giorni_alla_scadenza }}
+                    </div>
+                    <div class="status-label">Giorni alla Scadenza</div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-number">{{ abbonamento.accessi_utilizzati }}/{{ abbonamento.accessi_totali }}</div>
+                    <div class="status-label">Accessi Utilizzati</div>
+                </div>
+            </div>
+            
+            <!-- Progress Bar Utilizzo -->
+            <div class="usage-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (abbonamento.accessi_utilizzati / abbonamento.accessi_totali * 100) }}%"></div>
+                </div>
+                <div class="progress-label">
+                    Utilizzo: {{ (abbonamento.accessi_utilizzati / abbonamento.accessi_totali * 100) | round(1) }}%
+                </div>
+            </div>
+        </div>
+        
+        <!-- Date Importanti -->
+        <div class="dates-section">
+            <h3>📅 Periodo Abbonamento</h3>
+            <div class="dates-grid">
+                <div class="date-item">
+                    <span class="date-label">Data Inizio:</span>
+                    <span class="date-value">{{ abbonamento.data_inizio | date }}</span>
+                </div>
+                <div class="date-item">
+                    <span class="date-label">Data Fine:</span>
+                    <span class="date-value {% if abbonamento.is_in_scadenza %}warning{% elif abbonamento.is_scaduto %}danger{% endif %}">
+                        {{ abbonamento.data_fine | date }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ultimo Accesso -->
+        {% if abbonamento.ultimo_accesso %}
+        <div class="last-access-section">
+            <h3>🕐 Ultimo Accesso</h3>
+            <div class="last-access-info">
+                <div class="access-date">{{ abbonamento.ultimo_accesso.data_ora | datetime }}</div>
+                <div class="access-operator">Operatore: {{ abbonamento.ultimo_accesso.operatore.nome }}</div>
+                {% if abbonamento.ultimo_accesso.note %}
+                <div class="access-note">Note: {{ abbonamento.ultimo_accesso.note }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Messaggi di Avviso -->
+        {% if messaggi %}
+        <div class="messages-section">
+            {% for messaggio in messaggi %}
+            <div class="alert alert-warning">
+                <span class="alert-icon">⚠️</span>
+                <span class="alert-text">{{ messaggio }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Form Registrazione Accesso -->
+    {% if stato_ok %}
+    <div class="register-section">
+        <form method="POST" action="{{ url_for('accessi.registra') }}" class="register-form" id="registerForm">
+            {{ registra_form.hidden_tag() }}
+            {{ registra_form.abbonamento_id() }}
+            
+            <div class="form-group">
+                {{ registra_form.note.label(class="form-label") }}
+                {{ registra_form.note(class="form-textarea", placeholder="Note aggiuntive (opzionale)...", rows="3") }}
+            </div>
+            
+            <div class="form-actions">
+                {{ registra_form.submit(class="btn btn-success btn-lg btn-block register-btn", id="registerBtn") }}
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    <!-- Azioni di Navigazione -->
+    <div class="navigation-actions">
+        <a href="{{ url_for('accessi.index') }}" class="btn btn-secondary btn-lg">
+            ← Nuova Verifica
+        </a>
+        <a href="{{ url_for('abbonamenti.dettaglio', id=abbonamento.id) }}" class="btn btn-primary btn-lg">
+            👁️ Dettagli Abbonamento
+        </a>
+    </div>
+</div>
+
+<style>
+.verifica-container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.result-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+    animation: scaleIn 0.5s ease-out;
+}
+
+.result-card.result-error {
+    border-color: var(--danger-color);
+    border-width: 2px;
+}
+
+.result-header {
+    background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+    color: var(--white);
+    padding: var(--spacing-xl);
+    text-align: center;
+}
+
+.result-card.result-error .result-header {
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
+}
+
+.result-status {
+    margin-bottom: var(--spacing-lg);
+}
+
+.status-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: var(--spacing-md);
+}
+
+.status-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.result-nfc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    font-family: monospace;
+}
+
+.nfc-label {
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+
+.nfc-code {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: 0.1em;
+}
+
+.client-section,
+.vehicle-section,
+.status-section,
+.dates-section,
+.last-access-section,
+.messages-section {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.client-section:last-child,
+.vehicle-section:last-child,
+.status-section:last-child,
+.dates-section:last-child,
+.last-access-section:last-child,
+.messages-section:last-child {
+    border-bottom: none;
+}
+
+.client-section h3,
+.vehicle-section h3,
+.status-section h3,
+.dates-section h3,
+.last-access-section h3 {
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.125rem;
+    border-bottom: 2px solid var(--gray-100);
+    padding-bottom: var(--spacing-sm);
+}
+
+.client-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-sm);
+}
+
+.client-details,
+.vehicle-details {
+    display: flex;
+    gap: var(--spacing-lg);
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.targa-display {
+    font-family: monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-align: center;
+    background: var(--gray-50);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    letter-spacing: 0.1em;
+    margin-bottom: var(--spacing-md);
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.status-item {
+    text-align: center;
+    background: var(--gray-50);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+}
+
+.status-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+}
+
+.status-number.success {
+    color: var(--success-color);
+}
+
+.status-number.warning {
+    color: var(--warning-color);
+}
+
+.status-number.danger {
+    color: var(--danger-color);
+}
+
+.status-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.usage-progress {
+    background: var(--gray-50);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: var(--gray-200);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+    transition: width 0.5s ease;
+}
+
+.progress-label {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.dates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+}
+
+.date-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.date-label {
+    font-weight: 500;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.date-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.date-value.warning {
+    color: var(--warning-color);
+}
+
+.date-value.danger {
+    color: var(--danger-color);
+}
+
+.last-access-info {
+    background: var(--gray-50);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.access-date {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.access-operator {
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-xs);
+}
+
+.access-note {
+    font-style: italic;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+.alert {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--warning-dark);
+}
+
+.alert-icon {
+    font-size: 1.25rem;
+}
+
+.alert-text {
+    font-weight: 500;
+}
+
+.register-section {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 2px solid var(--success-color);
+}
+
+.register-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.register-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.register-btn:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+.navigation-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 767px) {
+    .client-details,
+    .vehicle-details {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dates-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .targa-display {
+        font-size: 1.5rem;
+    }
+    
+    .navigation-actions {
+        flex-direction: column;
+    }
+    
+    .detail {
+        display: block;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const registerBtn = document.getElementById('registerBtn');
+    const registerForm = document.getElementById('registerForm');
+    
+    // Anima progress bar
+    const progressFill = document.querySelector('.progress-fill');
+    if (progressFill) {
+        const width = progressFill.style.width;
+        progressFill.style.width = '0%';
+        setTimeout(() => {
+            progressFill.style.width = width;
+        }, 500);
+    }
+    
+    // Gestione submit registrazione
+    if (registerForm) {
+        registerForm.addEventListener('submit', function(e) {
+            registerBtn.disabled = true;
+            registerBtn.textContent = '⏳ Registrazione in corso...';
+            
+            // Feedback vibrazione
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        });
+    }
+    
+    // Auto-focus su note se presente
+    const noteTextarea = document.querySelector('textarea[name="note"]');
+    if (noteTextarea) {
+        noteTextarea.addEventListener('focus', function() {
+            this.style.minHeight = '120px';
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Enter per registrare accesso (se valido)
+        if (e.key === 'Enter' && e.ctrlKey && registerBtn) {
+            e.preventDefault();
+            registerBtn.click();
+        }
+        
+        // Esc per tornare indietro
+        if (e.key === 'Escape') {
+            window.location.href = '{{ url_for("accessi.index") }}';
+        }
+    });
+    
+    // Auto-redirect dopo registrazione (se necessario)
+    {% if stato_ok %}
+    setTimeout(function() {
+        if (document.querySelector('.flash-success')) {
+            // Se c'è un messaggio di successo, torna alla verifica dopo 3 secondi
+            setTimeout(() => {
+                window.location.href = '{{ url_for("accessi.index") }}';
+            }, 3000);
+        }
+    }, 100);
+    {% endif %}
+});
+</script>
+{% endblock %}

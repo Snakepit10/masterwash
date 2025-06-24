@@ -1,0 +1,582 @@
+{% extends "base.html" %}
+
+{% block title %}Targa Non Trovata - {{ app_name }}{% endblock %}
+{% block body_class %}targa-not-found-page{% endblock %}
+
+{% block content %}
+<div class="not-found-container">
+    
+    <!-- Error Header -->
+    <div class="error-header">
+        <div class="error-content">
+            <div class="error-icon">🚗❌</div>
+            <h1>Targa Non Trovata</h1>
+            <p>La targa ricercata non corrisponde a nessun abbonamento attivo</p>
+        </div>
+        <div class="targa-info">
+            <span class="targa-label">Targa cercata:</span>
+            <span class="targa-code">{{ targa }}</span>
+        </div>
+    </div>
+    
+    <!-- Quick Search -->
+    <div class="info-card search-card">
+        <div class="card-header">
+            <h2>🔍 Prova Altra Ricerca</h2>
+        </div>
+        <div class="card-body">
+            <div class="search-options">
+                <div class="search-option">
+                    <h3>🚗 Ricerca per Targa</h3>
+                    <form method="GET" action="" class="search-form" id="targaForm">
+                        <div class="form-group">
+                            <input type="text" 
+                                   name="targa" 
+                                   placeholder="Inserisci targa (es: AB123CD)"
+                                   class="form-input"
+                                   value="{{ targa }}"
+                                   maxlength="8"
+                                   autocomplete="off"
+                                   autofocus>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">
+                            🔍 Cerca per Targa
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="search-divider">
+                    <span>oppure</span>
+                </div>
+                
+                <div class="search-option">
+                    <h3>📱 Ricerca per NFC</h3>
+                    <form method="GET" action="{{ url_for('accessi.index') }}" class="search-form">
+                        <div class="form-group">
+                            <input type="text" 
+                                   name="nfc" 
+                                   placeholder="Inserisci codice NFC (8 caratteri)"
+                                   class="form-input"
+                                   maxlength="8"
+                                   autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-lg btn-block">
+                            📱 Cerca per NFC
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Possible Reasons -->
+    <div class="info-card reasons-card">
+        <div class="card-header">
+            <h2>🤔 Possibili Motivi</h2>
+        </div>
+        <div class="card-body">
+            <ul class="reasons-list">
+                <li>
+                    <span class="reason-icon">⏰</span>
+                    <div class="reason-content">
+                        <strong>Abbonamento Scaduto</strong>
+                        <p>L'abbonamento per questa targa potrebbe essere scaduto</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="reason-icon">🚗</span>
+                    <div class="reason-content">
+                        <strong>Targa Errata</strong>
+                        <p>Verifica di aver inserito la targa correttamente</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="reason-icon">🗑️</span>
+                    <div class="reason-content">
+                        <strong>Abbonamento Disattivato</strong>
+                        <p>L'abbonamento potrebbe essere stato disattivato o eliminato</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="reason-icon">📝</span>
+                    <div class="reason-content">
+                        <strong>Targa Non Registrata</strong>
+                        <p>La targa potrebbe non essere ancora stata registrata nel sistema</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Manual Search -->
+    <div class="info-card manual-search-card">
+        <div class="card-header">
+            <h2>👤 Ricerca Manuale Cliente</h2>
+        </div>
+        <div class="card-body">
+            <p>Se non riesci a trovare l'abbonamento, prova a cercare il cliente:</p>
+            
+            <form method="GET" action="{{ url_for('abbonamenti.index') }}" class="search-form">
+                <div class="form-group">
+                    <label for="search">Cerca per nome, telefono o email:</label>
+                    <input type="text" 
+                           id="search" 
+                           name="search" 
+                           placeholder="Es: Mario Rossi, 3331234567"
+                           class="form-input">
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    👤 Cerca Cliente
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Create New -->
+    <div class="info-card create-card">
+        <div class="card-header">
+            <h2>➕ Nuovo Abbonamento</h2>
+        </div>
+        <div class="card-body">
+            <p>Se il cliente non ha ancora un abbonamento, puoi crearne uno nuovo:</p>
+            
+            <div class="create-actions">
+                <a href="{{ url_for('abbonamenti.nuovo') }}?targa={{ targa }}" class="btn btn-success btn-lg btn-block">
+                    ➕ Crea Abbonamento per {{ targa }}
+                </a>
+                
+                <a href="{{ url_for('abbonamenti.nuovo') }}" class="btn btn-secondary btn-lg btn-block">
+                    📋 Crea Nuovo Abbonamento
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="actions-card">
+        <div class="actions-grid">
+            <a href="{{ url_for('accessi.index') }}" class="action-btn primary">
+                <span class="action-icon">🔍</span>
+                <span class="action-text">Verifica Accessi</span>
+            </a>
+            
+            <a href="{{ url_for('abbonamenti.index') }}" class="action-btn">
+                <span class="action-icon">📋</span>
+                <span class="action-text">Lista Abbonamenti</span>
+            </a>
+            
+            <a href="{{ url_for('dashboard.index') }}" class="action-btn">
+                <span class="action-icon">📊</span>
+                <span class="action-text">Dashboard</span>
+            </a>
+            
+            <a href="{{ url_for('abbonamenti.guida_nfc') }}" class="action-btn">
+                <span class="action-icon">📱</span>
+                <span class="action-text">Guida NFC</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Help Section -->
+    <div class="info-card help-card">
+        <div class="card-header">
+            <h2>💡 Suggerimenti per la Ricerca</h2>
+        </div>
+        <div class="card-body">
+            <div class="help-content">
+                <div class="help-section">
+                    <h4>🚗 Formato Targa</h4>
+                    <ul>
+                        <li><strong>Italiana nuova:</strong> AB123CD</li>
+                        <li><strong>Italiana vecchia:</strong> AB123CD</li>
+                        <li><strong>Moto:</strong> AB12345</li>
+                        <li><strong>Straniera:</strong> Vari formati supportati</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h4>🔤 Caratteri Speciali</h4>
+                    <ul>
+                        <li>Non includere spazi o trattini</li>
+                        <li>Maiuscole e minuscole sono equivalenti</li>
+                        <li>Evita caratteri speciali come O vs 0 (zero)</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h4>📱 Alternative</h4>
+                    <ul>
+                        <li>Usa il codice NFC se disponibile</li>
+                        <li>Cerca per nome/telefono del cliente</li>
+                        <li>Controlla abbonamenti scaduti nella lista completa</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.targa-not-found-page {
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    min-height: 100vh;
+}
+
+.not-found-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.error-header {
+    text-align: center;
+    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
+    color: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.error-content {
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.error-header h1 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.error-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.targa-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.targa-label {
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+
+.targa-code {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    font-size: 1.25rem;
+}
+
+.info-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--gray-900);
+    font-size: 1.25rem;
+}
+
+.card-body {
+    padding: var(--spacing-lg);
+}
+
+.search-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.search-option {
+    text-align: center;
+}
+
+.search-option h3 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--gray-700);
+    font-size: 1.125rem;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.form-group label {
+    font-weight: 500;
+    color: var(--gray-700);
+    text-align: left;
+}
+
+.form-input {
+    padding: var(--spacing-md);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    font-size: 1.125rem;
+    text-align: center;
+    font-family: monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+    transition: border-color var(--transition-fast);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-divider {
+    text-align: center;
+    position: relative;
+    padding: var(--spacing-md) 0;
+}
+
+.search-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gray-200);
+}
+
+.search-divider span {
+    background: var(--white);
+    padding: 0 var(--spacing-md);
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+.reasons-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.reasons-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--warning-color);
+}
+
+.reason-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.reason-content strong {
+    display: block;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.reason-content p {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.create-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.actions-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--gray-700);
+    transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: var(--gray-100);
+    transform: translateY(-1px);
+}
+
+.action-btn.primary {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+.action-btn.primary:hover {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+
+.action-icon {
+    font-size: 1.5rem;
+}
+
+.action-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.help-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.help-section h4 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.help-section ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.help-section li {
+    margin: var(--spacing-xs) 0;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767px) {
+    .not-found-container {
+        padding: var(--spacing-sm);
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .search-options {
+        gap: var(--spacing-md);
+    }
+    
+    .error-header {
+        padding: var(--spacing-lg);
+    }
+    
+    .error-icon {
+        font-size: 3rem;
+    }
+    
+    .reasons-list li {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .reason-icon {
+        align-self: center;
+    }
+    
+    .help-content {
+        gap: var(--spacing-md);
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus search input
+    const targaInput = document.querySelector('input[name="targa"]');
+    if (targaInput) {
+        targaInput.focus();
+        targaInput.select();
+    }
+    
+    // Gestione submit form targa
+    const targaForm = document.getElementById('targaForm');
+    if (targaForm) {
+        targaForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const targa = this.targa.value.trim().toUpperCase();
+            if (targa.length >= 5) {
+                window.location.href = `/abbonamenti/targa/${targa}`;
+            } else {
+                alert('Inserisci una targa valida (almeno 5 caratteri)');
+                this.targa.focus();
+            }
+        });
+    }
+    
+    // Auto uppercase per input targa
+    const targaInputs = document.querySelectorAll('input[name="targa"], input[name="nfc"]');
+    targaInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    });
+    
+    // Track error for analytics (if needed)
+    console.warn('Targa not found:', '{{ targa }}');
+});
+</script>
+{% endblock %}

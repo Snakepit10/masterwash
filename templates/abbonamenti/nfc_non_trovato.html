@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Abbonamento Non Trovato - {{ app_name }}{% endblock %}
+{% block body_class %}nfc-not-found-page{% endblock %}
+
+{% block content %}
+<div class="not-found-container">
+    
+    <!-- Error Header -->
+    <div class="error-header">
+        <div class="error-content">
+            <div class="error-icon">❌</div>
+            <h1>Abbonamento Non Trovato</h1>
+            <p>Il codice NFC scansionato non corrisponde a nessun abbonamento attivo</p>
+        </div>
+        <div class="nfc-info">
+            <span class="nfc-label">Codice NFC:</span>
+            <span class="nfc-code">{{ codice_nfc }}</span>
+        </div>
+    </div>
+    
+    <!-- Possible Reasons -->
+    <div class="info-card reasons-card">
+        <div class="card-header">
+            <h2>🤔 Possibili Motivi</h2>
+        </div>
+        <div class="card-body">
+            <ul class="reasons-list">
+                <li>
+                    <span class="reason-icon">⏰</span>
+                    <div class="reason-content">
+                        <strong>Abbonamento Scaduto</strong>
+                        <p>L'abbonamento potrebbe essere scaduto e non più attivo</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="reason-icon">🏷️</span>
+                    <div class="reason-content">
+                        <strong>Codice Errato</strong>
+                        <p>Il codice NFC potrebbe essere stato letto incorrettamente</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="reason-icon">🗑️</span>
+                    <div class="reason-content">
+                        <strong>Abbonamento Eliminato</strong>
+                        <p>L'abbonamento potrebbe essere stato disattivato o eliminato</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="reason-icon">🆕</span>
+                    <div class="reason-content">
+                        <strong>Nuovo Tag</strong>
+                        <p>Il tag NFC potrebbe non essere ancora stato assegnato</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Manual Search -->
+    <div class="info-card search-card">
+        <div class="card-header">
+            <h2>🔍 Ricerca Manuale</h2>
+        </div>
+        <div class="card-body">
+            <p>Prova a cercare l'abbonamento usando altri dati:</p>
+            
+            <form method="GET" action="{{ url_for('abbonamenti.index') }}" class="search-form">
+                <div class="form-group">
+                    <label for="search">Cerca per nome, telefono o targa:</label>
+                    <input type="text" 
+                           id="search" 
+                           name="search" 
+                           placeholder="Es: Mario Rossi, 123456789, AB123CD"
+                           class="form-input"
+                           autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    🔍 Cerca Abbonamento
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="actions-card">
+        <div class="actions-grid">
+            <a href="{{ url_for('abbonamenti.nuovo') }}" class="action-btn primary">
+                <span class="action-icon">➕</span>
+                <span class="action-text">Nuovo Abbonamento</span>
+            </a>
+            
+            <a href="{{ url_for('abbonamenti.index') }}" class="action-btn">
+                <span class="action-icon">📋</span>
+                <span class="action-text">Lista Abbonamenti</span>
+            </a>
+            
+            <a href="{{ url_for('accessi.index') }}" class="action-btn">
+                <span class="action-icon">🔍</span>
+                <span class="action-text">Verifica Accessi</span>
+            </a>
+            
+            <a href="{{ url_for('dashboard.index') }}" class="action-btn">
+                <span class="action-icon">📊</span>
+                <span class="action-text">Dashboard</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Help Section -->
+    <div class="info-card help-card">
+        <div class="card-header">
+            <h2>💡 Hai Bisogno di Aiuto?</h2>
+        </div>
+        <div class="card-body">
+            <div class="help-content">
+                <p><strong>Se questo problema persiste:</strong></p>
+                <ol>
+                    <li>Controlla che il tag NFC sia programmato correttamente</li>
+                    <li>Verifica che l'abbonamento sia ancora attivo nel sistema</li>
+                    <li>Prova a riprogrammare il tag NFC con il codice corretto</li>
+                    <li>Contatta il supporto tecnico se necessario</li>
+                </ol>
+                
+                <div class="tech-info">
+                    <h4>📱 Informazioni Tecniche</h4>
+                    <p><strong>Codice rilevato:</strong> <code>{{ codice_nfc }}</code></p>
+                    <p><strong>Timestamp:</strong> <code>{{ moment().format('DD/MM/YYYY HH:mm:ss') }}</code></p>
+                    <p><strong>URL richiesto:</strong> <code>{{ request.url }}</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Retry Section -->
+    <div class="retry-card">
+        <div class="retry-content">
+            <h3>🔄 Riprova Scansione</h3>
+            <p>Se hai un altro tag NFC o vuoi riprovare:</p>
+            <a href="{{ url_for('accessi.index') }}" class="btn btn-secondary btn-lg">
+                ← Torna alla Scansione
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.nfc-not-found-page {
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    min-height: 100vh;
+}
+
+.not-found-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.error-header {
+    text-align: center;
+    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
+    color: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.error-content {
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.error-header h1 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.error-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.nfc-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.nfc-label {
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+
+.nfc-code {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+
+.info-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--gray-900);
+    font-size: 1.25rem;
+}
+
+.card-body {
+    padding: var(--spacing-lg);
+}
+
+.reasons-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.reasons-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--warning-color);
+}
+
+.reason-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.reason-content strong {
+    display: block;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.reason-content p {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.search-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.search-form label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.actions-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--gray-700);
+    transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: var(--gray-100);
+    transform: translateY(-1px);
+}
+
+.action-btn.primary {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+.action-btn.primary:hover {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+
+.action-icon {
+    font-size: 1.5rem;
+}
+
+.action-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.help-content ol {
+    margin: var(--spacing-md) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.help-content li {
+    margin-bottom: var(--spacing-sm);
+    color: var(--gray-700);
+}
+
+.tech-info {
+    background: var(--gray-50);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    margin-top: var(--spacing-lg);
+    border-left: 4px solid var(--info-color);
+}
+
+.tech-info h4 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--info-color);
+    font-size: 1rem;
+}
+
+.tech-info p {
+    margin: var(--spacing-xs) 0;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.tech-info code {
+    background: var(--gray-200);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: var(--gray-800);
+}
+
+.retry-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    text-align: center;
+}
+
+.retry-content h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--gray-900);
+}
+
+.retry-content p {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--gray-600);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767px) {
+    .not-found-container {
+        padding: var(--spacing-sm);
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .error-header {
+        padding: var(--spacing-lg);
+    }
+    
+    .error-icon {
+        font-size: 3rem;
+    }
+    
+    .reasons-list li {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .reason-icon {
+        align-self: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus search input
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        searchInput.focus();
+    }
+    
+    // Track error for analytics (if needed)
+    console.warn('NFC Code not found:', '{{ codice_nfc }}');
+});
+</script>
+{% endblock %}

@@ -63,7 +63,11 @@ def index():
     ).order_by(Abbonamento.data_fine.asc()).limit(10).all()
     
     # Ultimi accessi
-    ultimi_accessi = Accesso.query.join(Abbonamento).join(Cliente).order_by(
+    ultimi_accessi = Accesso.query.join(
+        Abbonamento, Accesso.abbonamento_id == Abbonamento.id
+    ).join(
+        Cliente, Abbonamento.cliente_id == Cliente.id
+    ).order_by(
         Accesso.data_ora.desc()
     ).limit(10).all()
     
@@ -72,7 +76,9 @@ def index():
         Cliente.nome,
         Cliente.cognome,
         func.count(Accesso.id).label('accessi_count')
-    ).join(Abbonamento).join(Accesso).filter(
+    ).select_from(Cliente).join(Abbonamento, Cliente.id == Abbonamento.cliente_id).join(
+        Accesso, Abbonamento.id == Accesso.abbonamento_id
+    ).filter(
         Accesso.data_ora >= this_month_start
     ).group_by(Cliente.id, Cliente.nome, Cliente.cognome).order_by(
         func.count(Accesso.id).desc()

@@ -8,43 +8,80 @@
 <div class="accessi-container">
     <div class="verifica-card">
         <div class="verifica-header">
-            <h2>🔍 Scansiona Codice NFC</h2>
-            <p>Inserisci o scansiona il codice NFC per verificare l'abbonamento</p>
+            <h2>🔍 Verifica Abbonamento</h2>
+            <p>Inserisci il codice NFC o la targa per verificare l'abbonamento</p>
         </div>
         
-        <form method="POST" action="{{ url_for('accessi.verifica') }}" class="verifica-form" id="verificaForm">
-            {{ form.hidden_tag() }}
-            
-            <div class="form-group">
-                {{ form.codice_nfc.label(class="form-label visually-hidden") }}
-                {{ form.codice_nfc(class="form-input form-input-lg nfc-input", 
-                                   placeholder="Inserisci codice NFC (8 caratteri)", 
-                                   autocomplete="off",
-                                   autofocus="",
-                                   maxlength="8") }}
-                {% if form.codice_nfc.errors %}
-                    <div class="form-errors">
-                        {% for error in form.codice_nfc.errors %}
-                            <span class="form-error">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                {{ form.submit(class="btn btn-primary btn-lg btn-block") }}
-            </div>
-        </form>
-        
-        <!-- Simulatore NFC per test -->
-        <div class="nfc-simulator">
-            <h3>🧪 Simulatore NFC (Test)</h3>
-            <div class="simulator-buttons">
-                <button onclick="simulateNFC('12345678')" class="btn btn-sm btn-secondary">Test 1</button>
-                <button onclick="simulateNFC('87654321')" class="btn btn-sm btn-secondary">Test 2</button>
-                <button onclick="simulateNFC('ABCD1234')" class="btn btn-sm btn-secondary">Test 3</button>
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+            <div class="mode-tabs">
+                <button class="mode-tab active" onclick="switchMode('nfc')" id="nfcTab">
+                    📱 Codice NFC
+                </button>
+                <button class="mode-tab" onclick="switchMode('targa')" id="targaTab">
+                    🚗 Targa
+                </button>
             </div>
         </div>
+        
+        <!-- NFC Mode -->
+        <div id="nfcMode" class="input-mode active">
+            <form method="POST" action="{{ url_for('accessi.verifica') }}" class="verifica-form" id="nfcForm">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group">
+                    {{ form.codice_nfc.label(class="form-label visually-hidden") }}
+                    {{ form.codice_nfc(class="form-input form-input-lg nfc-input", 
+                                       placeholder="Tocca con NFC o inserisci codice (8 caratteri)", 
+                                       autocomplete="off",
+                                       autofocus="",
+                                       maxlength="8",
+                                       id="nfcInput") }}
+                    {% if form.codice_nfc.errors %}
+                        <div class="form-errors">
+                            {% for error in form.codice_nfc.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.submit(class="btn btn-primary btn-lg btn-block", value="🔍 Verifica NFC") }}
+                </div>
+            </form>
+        </div>
+        
+        <!-- Targa Mode -->
+        <div id="targaMode" class="input-mode">
+            <form method="GET" action="" class="verifica-form" id="targaForm">
+                <div class="form-group">
+                    <label for="targaInput" class="form-label visually-hidden">Targa</label>
+                    <input type="text" 
+                           id="targaInput"
+                           name="targa"
+                           class="form-input form-input-lg targa-input"
+                           placeholder="Inserisci targa (es: AB123CD)"
+                           autocomplete="off"
+                           maxlength="8">
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success btn-lg btn-block">
+                        🚗 Verifica Targa
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Pulsante per abilitare lettura NFC -->
+        <div class="nfc-controls">
+            <button id="enableNfcBtn" class="btn btn-info btn-lg btn-block" style="margin-top: 10px;">
+                📱 Abilita Lettura NFC
+            </button>
+            <div id="nfcStatus" class="nfc-status" style="display: none;"></div>
+        </div>
+        
     </div>
     
     <!-- Risultato Verifica Rapida (AJAX) -->
@@ -63,32 +100,13 @@
         </div>
     </div>
     
-    <!-- Istruzioni -->
-    <div class="instructions-card">
-        <h3>📖 Istruzioni</h3>
-        <ol>
-            <li>Inserisci il codice NFC nel campo sopra</li>
-            <li>Premi "Verifica" o Enter</li>
-            <li>Controlla i dati dell'abbonamento</li>
-            <li>Se tutto OK, clicca "Registra Accesso"</li>
-        </ol>
-        
-        <div class="shortcuts">
-            <h4>⌨️ Scorciatoie</h4>
-            <ul>
-                <li><kbd>Enter</kbd> - Avvia verifica</li>
-                <li><kbd>Esc</kbd> - Pulisci campo</li>
-                <li><kbd>F5</kbd> - Refresh pagina</li>
-            </ul>
-        </div>
-    </div>
     
     <!-- Accesso Rapido -->
     <div class="quick-access">
         <h3>🚀 Accesso Rapido</h3>
         <div class="quick-buttons">
             <a href="{{ url_for('accessi.rapido') }}" class="btn btn-info">
-                ⚡ Modalità Rapida
+                ⚡ Modalità NFC Rapida
             </a>
             <a href="{{ url_for('abbonamenti.index') }}" class="btn btn-secondary">
                 📋 Lista Abbonamenti
@@ -97,19 +115,311 @@
                 📅 Storico Accessi
             </a>
         </div>
+        
+        <div class="quick-search-hint">
+            <p><strong>💡 Suggerimento:</strong> Usa le tab sopra per passare velocemente tra ricerca NFC e ricerca per targa</p>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block head %}
+<style>
+.mode-selector {
+    margin-bottom: var(--spacing-lg);
+}
+
+.mode-tabs {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+}
+
+.mode-tab {
+    flex: 1;
+    padding: var(--spacing-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.875rem;
+}
+
+.mode-tab.active {
+    background: var(--white);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+}
+
+.mode-tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--gray-700);
+}
+
+.input-mode {
+    display: none;
+}
+
+.input-mode.active {
+    display: block;
+}
+
+.targa-input {
+    font-family: monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.nfc-controls {
+    margin-top: var(--spacing-lg);
+    text-align: center;
+    display: none;
+}
+
+.nfc-controls.active {
+    display: block;
+}
+
+.nfc-status {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    text-align: center;
+    animation: slideIn 0.3s ease-out;
+}
+
+.nfc-status.success {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.nfc-status.error {
+    background: var(--danger-color);
+    color: var(--white);
+}
+
+.nfc-status.warning {
+    background: var(--warning-color);
+    color: var(--white);
+}
+
+.nfc-status.info {
+    background: var(--info-color);
+    color: var(--white);
+}
+
+.nfc-input {
+    position: relative;
+}
+
+.nfc-input:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    border-color: var(--primary-color);
+}
+
+/* Indicatore di lettura NFC attiva */
+.nfc-reading {
+    position: relative;
+}
+
+.nfc-reading::after {
+    content: '📱';
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: translateY(-50%) scale(1); }
+    50% { opacity: 0.5; transform: translateY(-50%) scale(1.1); }
+    100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+/* Sezione aiuto NFC */
+.nfc-help {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    border-left: 4px solid var(--info-color);
+}
+
+.nfc-help h4 {
+    color: var(--info-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.nfc-help code {
+    background: var(--gray-200);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.nfc-help ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.nfc-help li {
+    margin-bottom: var(--spacing-xs);
+    color: var(--gray-700);
+}
+
+/* Miglioramenti per touch mobile */
+@media (hover: none) and (pointer: coarse) {
+    .nfc-controls button {
+        min-height: 56px;
+        font-size: 1.125rem;
+    }
+    
+    .nfc-input {
+        min-height: 60px;
+        font-size: 1.25rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const nfcInput = document.getElementById('codice_nfc');
-    const form = document.getElementById('verificaForm');
+    const nfcInput = document.getElementById('nfcInput');
+    const targaInput = document.getElementById('targaInput');
+    const nfcForm = document.getElementById('nfcForm');
+    const targaForm = document.getElementById('targaForm');
     const resultDiv = document.getElementById('verificaResult');
+    const enableNfcBtn = document.getElementById('enableNfcBtn');
+    const nfcStatus = document.getElementById('nfcStatus');
+    const nfcControls = document.querySelector('.nfc-controls');
     
-    // Auto-focus sull'input NFC
+    // Auto-focus sull'input attivo
     nfcInput.focus();
+    
+    // Verifica supporto NFC
+    let nfcSupported = false;
+    if ('NDEFReader' in window) {
+        nfcSupported = true;
+        enableNfcBtn.style.display = 'block';
+    } else {
+        enableNfcBtn.style.display = 'none';
+        console.log('NFC non supportato su questo browser/dispositivo');
+    }
+    
+    // Gestione NFC Web API
+    let nfcReader = null;
+    let nfcEnabled = false;
+    
+    enableNfcBtn.addEventListener('click', async function() {
+        if (!nfcSupported) {
+            showNfcStatus('NFC non supportato su questo dispositivo', 'error');
+            return;
+        }
+        
+        try {
+            if (!nfcEnabled) {
+                // Abilita lettura NFC
+                nfcReader = new NDEFReader();
+                await nfcReader.scan();
+                
+                nfcReader.addEventListener('reading', ({ message, serialNumber }) => {
+                    console.log('NFC tag rilevato:', serialNumber);
+                    
+                    // Prova a estrarre il codice dal tag
+                    let nfcCode = '';
+                    
+                    // Usa il numero seriale se disponibile
+                    if (serialNumber) {
+                        nfcCode = serialNumber.replace(/:/g, '').toUpperCase().slice(-8);
+                    }
+                    
+                    // Altrimenti prova a leggere il contenuto
+                    for (const record of message.records) {
+                        if (record.recordType === 'text') {
+                            const textDecoder = new TextDecoder(record.encoding);
+                            const text = textDecoder.decode(record.data);
+                            nfcCode = text.replace(/[^A-Z0-9]/g, '').slice(0, 8);
+                        } else if (record.recordType === 'url') {
+                            const textDecoder = new TextDecoder();
+                            const url = textDecoder.decode(record.data);
+                            // Estrai codice dalla URL (es: /verify/ABC12345)
+                            const match = url.match(/[A-Z0-9]{8}/);
+                            if (match) {
+                                nfcCode = match[0];
+                            }
+                        }
+                    }
+                    
+                    // Se non trovato nei record, usa parte del serial number
+                    if (!nfcCode && serialNumber) {
+                        nfcCode = serialNumber.replace(/[^A-F0-9]/g, '').slice(-8).toUpperCase();
+                    }
+                    
+                    if (nfcCode && nfcCode.length >= 6) {
+                        nfcInput.value = nfcCode.slice(0, 8);
+                        verificaRapida(nfcCode.slice(0, 8));
+                        showNfcStatus('Tag NFC letto con successo!', 'success');
+                        
+                        // Vibrazione feedback
+                        if (navigator.vibrate) {
+                            navigator.vibrate([100, 50, 100]);
+                        }
+                    } else {
+                        showNfcStatus('Impossibile leggere il codice dal tag NFC', 'warning');
+                    }
+                });
+                
+                nfcEnabled = true;
+                enableNfcBtn.textContent = '🔴 Disabilita NFC';
+                enableNfcBtn.className = 'btn btn-danger btn-lg btn-block';
+                showNfcStatus('NFC abilitato - Avvicina il tag', 'success');
+                
+            } else {
+                // Disabilita lettura NFC
+                if (nfcReader) {
+                    // Non c'è un metodo stop() standard, ma possiamo resettare
+                    nfcReader = null;
+                }
+                nfcEnabled = false;
+                enableNfcBtn.textContent = '📱 Abilita Lettura NFC';
+                enableNfcBtn.className = 'btn btn-info btn-lg btn-block';
+                showNfcStatus('NFC disabilitato', 'info');
+            }
+            
+        } catch (error) {
+            console.error('Errore NFC:', error);
+            let errorMessage = 'Errore durante l\'abilitazione NFC';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage = 'Permesso NFC negato. Abilita i permessi NFC nelle impostazioni.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage = 'NFC non supportato su questo dispositivo.';
+            }
+            
+            showNfcStatus(errorMessage, 'error');
+        }
+    });
+    
+    function showNfcStatus(message, type) {
+        nfcStatus.textContent = message;
+        nfcStatus.className = `nfc-status ${type}`;
+        nfcStatus.style.display = 'block';
+        
+        // Auto-hide dopo 5 secondi
+        setTimeout(() => {
+            nfcStatus.style.display = 'none';
+        }, 5000);
+    }
     
     // Convertimento automatico in maiuscolo
     nfcInput.addEventListener('input', function() {
@@ -129,12 +439,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Submit form
-    form.addEventListener('submit', function(e) {
+    // Submit NFC form
+    nfcForm.addEventListener('submit', function(e) {
         if (nfcInput.value.length !== 8) {
             e.preventDefault();
             showError('Il codice NFC deve essere di 8 caratteri');
         }
+    });
+    
+    // Submit Targa form
+    targaForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const targa = targaInput.value.trim().toUpperCase();
+        if (targa.length >= 5) {
+            window.location.href = `/abbonamenti/targa/${targa}`;
+        } else {
+            showError('Inserisci una targa valida (almeno 5 caratteri)');
+            targaInput.focus();
+        }
+    });
+    
+    // Auto uppercase per targa
+    targaInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
     });
     
     // Verifica rapida via AJAX
@@ -272,11 +599,6 @@ document.addEventListener('DOMContentLoaded', function() {
         nfcInput.focus();
     };
     
-    // Simulatore NFC per test
-    window.simulateNFC = function(codice) {
-        nfcInput.value = codice;
-        verificaRapida(codice);
-    };
     
     // Utility functions
     function showError(message) {
@@ -313,5 +635,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 });
+
+// Switch between NFC and Targa modes
+function switchMode(mode) {
+    // Update tabs
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.getElementById(mode + 'Tab').classList.add('active');
+    
+    // Update input modes
+    document.querySelectorAll('.input-mode').forEach(inputMode => {
+        inputMode.classList.remove('active');
+    });
+    document.getElementById(mode + 'Mode').classList.add('active');
+    
+    // Update instructions
+    document.querySelectorAll('.instruction-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    document.getElementById(mode + 'Instructions').style.display = 'block';
+    
+    // Update NFC controls visibility
+    const nfcControls = document.querySelector('.nfc-controls');
+    if (mode === 'nfc') {
+        nfcControls.classList.add('active');
+        document.getElementById('nfcInput').focus();
+    } else {
+        nfcControls.classList.remove('active');
+        document.getElementById('targaInput').focus();
+    }
+    
+    // Clear any previous results
+    const resultDiv = document.getElementById('verificaResult');
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+}
 </script>
 {% endblock %}

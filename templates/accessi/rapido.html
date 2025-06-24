@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+
+{% block title %}Accesso Rapido - {{ app_name }}{% endblock %}
+{% block body_class %}rapido-page{% endblock %}
+
+{% block header_title %}Accesso Rapido{% endblock %}
+
+{% block content %}
+<div class="rapido-container">
+    <div class="rapido-card">
+        <div class="rapido-header">
+            <h1>⚡ Accesso Rapido</h1>
+            <p>Modalità semplificata per verifica veloce abbonamenti</p>
+        </div>
+        
+        <div class="nfc-scanner">
+            <div class="scanner-area" id="scannerArea">
+                <div class="scanner-icon">📱</div>
+                <div class="scanner-text">Avvicina il tag NFC</div>
+                <div class="scanner-rings">
+                    <div class="ring ring1"></div>
+                    <div class="ring ring2"></div>
+                    <div class="ring ring3"></div>
+                </div>
+            </div>
+            
+            <input type="text" id="nfcInput" class="nfc-input" 
+                   placeholder="Oppure inserisci codice manualmente" 
+                   maxlength="8" autocomplete="off">
+        </div>
+        
+        <div class="status-area">
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+            <div id="resultArea" class="result-area" style="display: none;"></div>
+        </div>
+        
+        <div class="quick-actions">
+            <button id="enableNfcBtn" class="btn btn-primary btn-lg">
+                📱 Abilita NFC
+            </button>
+            <button id="clearBtn" class="btn btn-secondary">
+                🗑️ Pulisci
+            </button>
+            <a href="{{ url_for('accessi.index') }}" class="btn btn-secondary">
+                ← Modalità Normale
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.rapido-page {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+}
+
+.rapido-page .main-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: var(--spacing-md);
+}
+
+.rapido-container {
+    width: 100%;
+    max-width: 500px;
+}
+
+.rapido-card {
+    background: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-xl);
+    padding: var(--spacing-2xl);
+    text-align: center;
+    animation: slideIn 0.5s ease-out;
+}
+
+.rapido-header h1 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+    font-size: 2rem;
+}
+
+.rapido-header p {
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-xl);
+}
+
+.nfc-scanner {
+    margin-bottom: var(--spacing-xl);
+}
+
+.scanner-area {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto var(--spacing-lg);
+    background: linear-gradient(135deg, var(--info-color), var(--info-dark));
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.scanner-area:hover {
+    transform: scale(1.05);
+}
+
+.scanner-area.active {
+    background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+}
+
+.scanner-area.error {
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
+}
+
+.scanner-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.scanner-text {
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.scanner-rings {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+}
+
+.ring {
+    position: absolute;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    animation: pulse-ring 2s infinite;
+}
+
+.ring1 {
+    width: 100%;
+    height: 100%;
+}
+
+.ring2 {
+    width: 120%;
+    height: 120%;
+    top: -10%;
+    left: -10%;
+    animation-delay: 0.5s;
+}
+
+.ring3 {
+    width: 140%;
+    height: 140%;
+    top: -20%;
+    left: -20%;
+    animation-delay: 1s;
+}
+
+.scanner-area.active .ring {
+    border-color: rgba(255, 255, 255, 0.5);
+    animation: pulse-ring 1s infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.2);
+        opacity: 0;
+    }
+}
+
+.nfc-input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius-lg);
+    font-size: 1.25rem;
+    text-align: center;
+    font-family: monospace;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all var(--transition-fast);
+}
+
+.nfc-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.status-area {
+    margin-bottom: var(--spacing-lg);
+    min-height: 60px;
+}
+
+.status-message {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.status-message.success {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-message.error {
+    background: var(--danger-color);
+    color: var(--white);
+}
+
+.status-message.warning {
+    background: var(--warning-color);
+    color: var(--white);
+}
+
+.status-message.info {
+    background: var(--info-color);
+    color: var(--white);
+}
+
+.result-area {
+    background: var(--gray-50);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    border: 2px solid var(--gray-200);
+    animation: scaleIn 0.3s ease-out;
+}
+
+.result-area.success {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.result-area.error {
+    border-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.quick-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.cliente-info {
+    margin-bottom: var(--spacing-md);
+}
+
+.cliente-nome {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.targa-display {
+    font-family: monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: var(--spacing-sm) 0;
+    letter-spacing: 0.1em;
+}
+
+.accessi-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: var(--spacing-md) 0;
+}
+
+.accessi-rimanenti {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.accessi-rimanenti.success {
+    color: var(--success-color);
+}
+
+.accessi-rimanenti.warning {
+    color: var(--warning-color);
+}
+
+.accessi-rimanenti.danger {
+    color: var(--danger-color);
+}
+
+.register-btn {
+    width: 100%;
+    margin-top: var(--spacing-md);
+    font-size: 1.125rem;
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767px) {
+    .scanner-area {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .scanner-icon {
+        font-size: 2rem;
+    }
+    
+    .scanner-text {
+        font-size: 1rem;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+    }
+    
+    .quick-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nfcInput = document.getElementById('nfcInput');
+    const scannerArea = document.getElementById('scannerArea');
+    const enableNfcBtn = document.getElementById('enableNfcBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const resultArea = document.getElementById('resultArea');
+    
+    let nfcEnabled = false;
+    let nfcReader = null;
+    
+    // Focus automatico
+    nfcInput.focus();
+    
+    // Gestione input manuale
+    nfcInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+        
+        if (this.value.length === 8) {
+            verificaCodice(this.value);
+        }
+    });
+    
+    // Scanner click
+    scannerArea.addEventListener('click', function() {
+        if (!nfcEnabled) {
+            enableNfcBtn.click();
+        }
+    });
+    
+    // Enable NFC
+    enableNfcBtn.addEventListener('click', async function() {
+        if ('NDEFReader' in window) {
+            try {
+                if (!nfcEnabled) {
+                    nfcReader = new NDEFReader();
+                    await nfcReader.scan();
+                    
+                    nfcReader.addEventListener('reading', ({ message, serialNumber }) => {
+                        let nfcCode = extractNfcCode(message, serialNumber);
+                        
+                        if (nfcCode) {
+                            nfcInput.value = nfcCode;
+                            verificaCodice(nfcCode);
+                            
+                            // Feedback visivo
+                            scannerArea.classList.add('active');
+                            setTimeout(() => {
+                                scannerArea.classList.remove('active');
+                            }, 2000);
+                            
+                            // Vibrazione
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100]);
+                            }
+                        }
+                    });
+                    
+                    nfcEnabled = true;
+                    scannerArea.classList.add('active');
+                    enableNfcBtn.textContent = '🔴 Disabilita NFC';
+                    enableNfcBtn.className = 'btn btn-danger btn-lg';
+                    showStatus('NFC attivato - Avvicina il tag', 'success');
+                    
+                } else {
+                    nfcReader = null;
+                    nfcEnabled = false;
+                    scannerArea.classList.remove('active', 'error');
+                    enableNfcBtn.textContent = '📱 Abilita NFC';
+                    enableNfcBtn.className = 'btn btn-primary btn-lg';
+                    showStatus('NFC disattivato', 'info');
+                }
+                
+            } catch (error) {
+                scannerArea.classList.add('error');
+                let errorMsg = 'Errore NFC';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMsg = 'Permesso NFC negato';
+                } else if (error.name === 'NotSupportedError') {
+                    errorMsg = 'NFC non supportato';
+                }
+                
+                showStatus(errorMsg, 'error');
+            }
+        } else {
+            showStatus('NFC non supportato su questo browser', 'error');
+        }
+    });
+    
+    // Clear button
+    clearBtn.addEventListener('click', function() {
+        nfcInput.value = '';
+        statusMessage.style.display = 'none';
+        resultArea.style.display = 'none';
+        nfcInput.focus();
+    });
+    
+    // Verifica codice
+    function verificaCodice(codice) {
+        showStatus('Verifica in corso...', 'info');
+        
+        fetch(`/accessi/api/verifica-nfc?codice=${codice}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostraRisultato(data);
+                } else {
+                    showStatus(data.message, 'error');
+                    scannerArea.classList.add('error');
+                    setTimeout(() => {
+                        scannerArea.classList.remove('error');
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                showStatus('Errore di connessione', 'error');
+                console.error('Errore:', error);
+            });
+    }
+    
+    // Mostra risultato
+    function mostraRisultato(data) {
+        const abbonamento = data.abbonamento;
+        const canAccess = !abbonamento.is_scaduto && abbonamento.accessi_rimanenti > 0;
+        
+        let accessiClass = 'success';
+        if (abbonamento.accessi_rimanenti <= 2) {
+            accessiClass = 'danger';
+        } else if (abbonamento.accessi_rimanenti <= 5) {
+            accessiClass = 'warning';
+        }
+        
+        const resultHtml = `
+            <div class="cliente-info">
+                <div class="cliente-nome">${abbonamento.cliente}</div>
+                <div class="targa-display">${abbonamento.targa}</div>
+            </div>
+            
+            <div class="accessi-info">
+                <span>Accessi rimanenti:</span>
+                <span class="accessi-rimanenti ${accessiClass}">
+                    ${abbonamento.accessi_rimanenti}
+                </span>
+            </div>
+            
+            ${data.messaggi.length > 0 ? `
+                <div class="messaggi">
+                    ${data.messaggi.map(msg => `<div class="alert-text">${msg}</div>`).join('')}
+                </div>
+            ` : ''}
+            
+            ${canAccess ? `
+                <button onclick="registraAccesso(${abbonamento.id})" class="btn btn-success register-btn">
+                    ✅ Registra Accesso
+                </button>
+            ` : `
+                <div class="alert-text" style="color: var(--danger-color); margin-top: var(--spacing-md);">
+                    ❌ Accesso non consentito
+                </div>
+            `}
+        `;
+        
+        resultArea.innerHTML = resultHtml;
+        resultArea.className = `result-area ${canAccess ? 'success' : 'error'}`;
+        resultArea.style.display = 'block';
+        
+        statusMessage.style.display = 'none';
+    }
+    
+    // Registra accesso
+    window.registraAccesso = function(abbonamentoId) {
+        const registerBtn = document.querySelector('.register-btn');
+        registerBtn.disabled = true;
+        registerBtn.textContent = '⏳ Registrazione...';
+        
+        fetch('/accessi/api/registra-accesso', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
+            },
+            body: JSON.stringify({
+                abbonamento_id: abbonamentoId,
+                note: ''
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStatus(data.message, 'success');
+                
+                // Pulisci dopo successo
+                setTimeout(() => {
+                    clearBtn.click();
+                }, 2000);
+                
+                // Vibrazione successo
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+            } else {
+                showStatus(data.message, 'error');
+                registerBtn.disabled = false;
+                registerBtn.textContent = '✅ Registra Accesso';
+            }
+        })
+        .catch(error => {
+            showStatus('Errore durante la registrazione', 'error');
+            registerBtn.disabled = false;
+            registerBtn.textContent = '✅ Registra Accesso';
+        });
+    };
+    
+    // Estrai codice NFC
+    function extractNfcCode(message, serialNumber) {
+        let nfcCode = '';
+        
+        // Da serial number
+        if (serialNumber) {
+            nfcCode = serialNumber.replace(/[^A-F0-9]/g, '').slice(-8).toUpperCase();
+        }
+        
+        // Da contenuto records
+        for (const record of message.records) {
+            if (record.recordType === 'text') {
+                const decoder = new TextDecoder(record.encoding || 'utf-8');
+                const text = decoder.decode(record.data);
+                const extracted = text.replace(/[^A-Z0-9]/g, '').slice(0, 8);
+                if (extracted.length >= 6) {
+                    nfcCode = extracted;
+                    break;
+                }
+            } else if (record.recordType === 'url') {
+                const decoder = new TextDecoder();
+                const url = decoder.decode(record.data);
+                const match = url.match(/[A-Z0-9]{6,8}/);
+                if (match) {
+                    nfcCode = match[0].slice(0, 8);
+                    break;
+                }
+            }
+        }
+        
+        return nfcCode.length >= 6 ? nfcCode.slice(0, 8) : null;
+    }
+    
+    // Mostra status
+    function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message ${type}`;
+        statusMessage.style.display = 'block';
+        resultArea.style.display = 'none';
+        
+        // Auto-hide per messaggi non critici
+        if (type === 'info' || type === 'success') {
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            clearBtn.click();
+        }
+    });
+});
+</script>
+{% endblock %}

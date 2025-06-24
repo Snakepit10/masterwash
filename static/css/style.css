@@ -46,7 +46,6 @@
     
     /* Dimensioni */
     --header-height: 60px;
-    --bottom-nav-height: 70px;
     --sidebar-width: 280px;
     
     /* Ombre */
@@ -310,57 +309,10 @@ a:hover {
 /* ===== MAIN CONTENT ===== */
 .main-content {
     margin-top: var(--header-height);
-    margin-bottom: var(--bottom-nav-height);
     padding: var(--spacing-md);
-    min-height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+    min-height: calc(100vh - var(--header-height));
 }
 
-/* ===== BOTTOM NAVIGATION ===== */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: var(--bottom-nav-height);
-    background: var(--white);
-    border-top: 1px solid var(--gray-200);
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    z-index: 1000;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.bottom-nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm);
-    color: var(--gray-600);
-    text-decoration: none;
-    transition: all var(--transition-fast);
-    flex: 1;
-    min-width: 0;
-}
-
-.bottom-nav-item:hover {
-    color: var(--primary-color);
-}
-
-.bottom-nav-item.active {
-    color: var(--primary-color);
-}
-
-.bottom-nav-icon {
-    font-size: 1.5rem;
-}
-
-.bottom-nav-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-align: center;
-}
 
 /* ===== BUTTONS ===== */
 .btn {
@@ -813,13 +765,9 @@ a:hover {
 /* ===== RESPONSIVE ===== */
 @media (min-width: 768px) {
     .main-content {
-        margin-bottom: 0;
         padding: var(--spacing-lg);
     }
     
-    .bottom-nav {
-        display: none;
-    }
     
     .user-info {
         display: block;
@@ -1490,7 +1438,6 @@ kbd {
 /* Print styles */
 @media print {
     .header,
-    .bottom-nav,
     .nav-menu,
     .flash-messages,
     .loading-overlay {

@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Abbonamento - {{ app_name }}{% endblock %}
+
+{% block header_title %}Modifica Abbonamento{% endblock %}
+
+{% block content %}
+<div class="modifica-container">
+    <form method="POST" class="modifica-form" id="modificaForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- Informazioni Cliente -->
+        <div class="form-section">
+            <h3>👤 Informazioni Cliente</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.nome.label(class="form-label") }}
+                    {{ form.nome(class="form-input") }}
+                    {% if form.nome.errors %}
+                        <div class="form-errors">
+                            {% for error in form.nome.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.cognome.label(class="form-label") }}
+                    {{ form.cognome(class="form-input") }}
+                    {% if form.cognome.errors %}
+                        <div class="form-errors">
+                            {% for error in form.cognome.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.telefono.label(class="form-label") }}
+                    {{ form.telefono(class="form-input", placeholder="333 123 4567") }}
+                    {% if form.telefono.errors %}
+                        <div class="form-errors">
+                            {% for error in form.telefono.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-input", placeholder="email@esempio.com") }}
+                    {% if form.email.errors %}
+                        <div class="form-errors">
+                            {% for error in form.email.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.tipo_cliente.label(class="form-label") }}
+                    {{ form.tipo_cliente(class="form-select") }}
+                    {% if form.tipo_cliente.errors %}
+                        <div class="form-errors">
+                            {% for error in form.tipo_cliente.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dati Abbonamento -->
+        <div class="form-section">
+            <h3>🚗 Dati Abbonamento</h3>
+            
+            <div class="current-info">
+                <div class="current-item">
+                    <span class="current-label">Codice NFC Attuale:</span>
+                    <span class="current-value nfc">{{ abbonamento.codice_nfc }}</span>
+                </div>
+                <div class="current-item">
+                    <span class="current-label">Creato il:</span>
+                    <span class="current-value">{{ abbonamento.data_creazione | datetime }}</span>
+                </div>
+                <div class="current-item">
+                    <span class="current-label">Accessi Utilizzati:</span>
+                    <span class="current-value">{{ abbonamento.accessi_utilizzati }} / {{ abbonamento.accessi_totali }}</span>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.targa.label(class="form-label") }}
+                    {{ form.targa(class="form-input", style="text-transform: uppercase;") }}
+                    {% if form.targa.errors %}
+                        <div class="form-errors">
+                            {% for error in form.targa.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.codice_nfc.label(class="form-label") }}
+                    {{ form.codice_nfc(class="form-input", style="text-transform: uppercase;", maxlength="8") }}
+                    {% if form.codice_nfc.errors %}
+                        <div class="form-errors">
+                            {% for error in form.codice_nfc.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="form-help">⚠️ Cambiare solo se necessario</small>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.tipo_abbonamento.label(class="form-label") }}
+                    {{ form.tipo_abbonamento(class="form-select", id="tipoSelect") }}
+                    {% if form.tipo_abbonamento.errors %}
+                        <div class="form-errors">
+                            {% for error in form.tipo_abbonamento.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="form-help">⚠️ Cambierà la data di scadenza</small>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.accessi_totali.label(class="form-label") }}
+                    {{ form.accessi_totali(class="form-input", min="1", max="1000") }}
+                    {% if form.accessi_totali.errors %}
+                        <div class="form-errors">
+                            {% for error in form.accessi_totali.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.prezzo.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-prefix">€</span>
+                        {{ form.prezzo(class="form-input", step="0.01", min="0.01") }}
+                    </div>
+                    {% if form.prezzo.errors %}
+                        <div class="form-errors">
+                            {% for error in form.prezzo.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.stato_pagamento.label(class="form-label") }}
+                    {{ form.stato_pagamento(class="form-select") }}
+                    {% if form.stato_pagamento.errors %}
+                        <div class="form-errors">
+                            {% for error in form.stato_pagamento.errors %}
+                                <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Anteprima Modifiche -->
+        <div class="form-section preview-section" id="previewSection" style="display: none;">
+            <h3>👁️ Anteprima Modifiche</h3>
+            <div class="preview-content" id="previewContent">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Azioni -->
+        <div class="form-actions">
+            {{ form.submit(class="btn btn-primary btn-lg") }}
+            <a href="{{ url_for('abbonamenti.dettaglio', id=abbonamento.id) }}" 
+               class="btn btn-secondary btn-lg">
+                Annulla
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.modifica-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-section {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.form-section h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.current-info {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--gray-200);
+}
+
+.current-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+}
+
+.current-item:not(:last-child) {
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
+}
+
+.current-label {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.current-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.current-value.nfc {
+    font-family: monospace;
+    background: var(--info-color);
+    color: var(--white);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-prefix {
+    position: absolute;
+    left: var(--spacing-md);
+    color: var(--gray-600);
+    font-weight: 500;
+    z-index: 1;
+}
+
+.input-group .form-input {
+    padding-left: 40px;
+}
+
+.form-help {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: 0.75rem;
+    color: var(--warning-color);
+    font-style: italic;
+}
+
+.preview-section {
+    border: 2px dashed var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.preview-content {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+}
+
+.preview-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.preview-item:last-child {
+    border-bottom: none;
+}
+
+.preview-label {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.preview-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.preview-value.changed {
+    color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.1);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 767px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .current-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('modificaForm');
+    const previewSection = document.getElementById('previewSection');
+    const previewContent = document.getElementById('previewContent');
+    
+    // Dati originali per confronto
+    const originalData = {
+        nome: '{{ abbonamento.cliente.nome }}',
+        cognome: '{{ abbonamento.cliente.cognome }}',
+        telefono: '{{ abbonamento.cliente.telefono }}',
+        email: '{{ abbonamento.cliente.email or "" }}',
+        targa: '{{ abbonamento.targa }}',
+        tipo_abbonamento: '{{ abbonamento.tipo_abbonamento }}',
+        accessi_totali: {{ abbonamento.accessi_totali }},
+        prezzo: '{{ abbonamento.prezzo }}',
+        stato_pagamento: '{{ abbonamento.stato_pagamento }}',
+        codice_nfc: '{{ abbonamento.codice_nfc }}'
+    };
+    
+    // Monitora cambiamenti
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
+    
+    function updatePreview() {
+        const currentData = {
+            nome: form.nome.value.trim(),
+            cognome: form.cognome.value.trim(),
+            telefono: form.telefono.value.trim(),
+            email: form.email.value.trim(),
+            targa: form.targa.value.trim().toUpperCase(),
+            tipo_abbonamento: form.tipo_abbonamento.value,
+            accessi_totali: parseInt(form.accessi_totali.value) || 0,
+            prezzo: form.prezzo.value,
+            stato_pagamento: form.stato_pagamento.value,
+            codice_nfc: form.codice_nfc.value.trim().toUpperCase()
+        };
+        
+        const changes = [];
+        
+        // Confronta ogni campo
+        Object.keys(originalData).forEach(key => {
+            if (String(currentData[key]) !== String(originalData[key])) {
+                let label = key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                let oldValue = originalData[key];
+                let newValue = currentData[key];
+                
+                // Formattazione speciale per alcuni campi
+                if (key === 'prezzo') {
+                    oldValue = `€${parseFloat(oldValue).toFixed(2)}`;
+                    newValue = `€${parseFloat(newValue).toFixed(2)}`;
+                } else if (key === 'stato_pagamento') {
+                    oldValue = oldValue.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    newValue = newValue.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                } else if (key === 'tipo_abbonamento') {
+                    oldValue = oldValue.charAt(0).toUpperCase() + oldValue.slice(1);
+                    newValue = newValue.charAt(0).toUpperCase() + newValue.slice(1);
+                }
+                
+                changes.push({
+                    label: label,
+                    old: oldValue,
+                    new: newValue
+                });
+            }
+        });
+        
+        if (changes.length > 0) {
+            let previewHtml = '<h4>🔄 Modifiche da applicare:</h4>';
+            changes.forEach(change => {
+                previewHtml += `
+                    <div class="preview-item">
+                        <span class="preview-label">${change.label}:</span>
+                        <span class="preview-value">
+                            <del style="color: var(--gray-400);">${change.old}</del>
+                            →
+                            <span class="changed">${change.new}</span>
+                        </span>
+                    </div>
+                `;
+            });
+            
+            previewContent.innerHTML = previewHtml;
+            previewSection.style.display = 'block';
+        } else {
+            previewSection.style.display = 'none';
+        }
+    }
+    
+    // Trigger iniziale
+    updatePreview();
+    
+    // Formattazione automatica
+    form.targa.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/\s+/g, '');
+    });
+    
+    form.codice_nfc.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    });
+    
+    // Validazione form
+    form.addEventListener('submit', function(e) {
+        const nome = form.nome.value.trim();
+        const cognome = form.cognome.value.trim();
+        const telefono = form.telefono.value.trim();
+        const targa = form.targa.value.trim();
+        const accessi = form.accessi_totali.value;
+        const prezzo = form.prezzo.value;
+        
+        if (!nome || !cognome || !telefono || !targa || !accessi || !prezzo) {
+            e.preventDefault();
+            MasterWash.showNotification('Completa tutti i campi obbligatori', 'error');
+            return;
+        }
+        
+        // Conferma se ci sono modifiche significative
+        const tipoChanged = form.tipo_abbonamento.value !== originalData.tipo_abbonamento;
+        const nfcChanged = form.codice_nfc.value !== originalData.codice_nfc;
+        
+        if (tipoChanged || nfcChanged) {
+            let confirmMsg = 'Confermi le modifiche?';
+            if (tipoChanged) confirmMsg += '\n⚠️ Il tipo di abbonamento cambierà la data di scadenza.';
+            if (nfcChanged) confirmMsg += '\n⚠️ Il codice NFC cambierà.';
+            
+            if (!confirm(confirmMsg)) {
+                e.preventDefault();
+                return;
+            }
+        }
+        
+        MasterWash.showLoading('Salvataggio modifiche...');
+    });
+});
+</script>
+{% endblock %}

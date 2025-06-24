@@ -1,0 +1,776 @@
+{% extends "base.html" %}
+
+{% block title %}Guida Programmazione NFC - {{ app_name }}{% endblock %}
+
+{% block header_title %}Guida Programmazione NFC{% endblock %}
+
+{% block content %}
+<div class="guida-container">
+    
+    <!-- Introduzione -->
+    <div class="intro-card">
+        <div class="intro-header">
+            <h1>📱 Guida alla Programmazione Tag NFC</h1>
+            <p>Istruzioni complete per creare e programmare i tag NFC per MasterWash</p>
+        </div>
+    </div>
+    
+    <!-- Come Funziona -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>🔄 Come Funziona il Sistema NFC</h2>
+        </div>
+        <div class="card-body">
+            <div class="flow-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Creazione Abbonamento</h3>
+                        <p>Il sistema genera automaticamente un URL unico per ogni abbonamento</p>
+                        <div class="example">
+                            <strong>Esempio:</strong><br>
+                            <code>https://masterwash.up.railway.app/abbonamenti/nfc/ABC12345</code>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Programmazione Tag</h3>
+                        <p>Scrivi l'URL completo sul tag NFC usando un'app come NFC Tools</p>
+                        <div class="example">
+                            <strong>Tipo:</strong> URL/URI<br>
+                            <strong>Contenuto:</strong> L'URL completo dell'abbonamento
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Scansione Cliente</h3>
+                        <p>Il cliente avvicina il tag al telefono e si apre automaticamente la pagina dell'abbonamento</p>
+                        <div class="example">
+                            <strong>Risultato:</strong> Accesso diretto alle azioni dell'abbonamento
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- App Consigliate -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>📱 App Consigliate per Programmazione</h2>
+        </div>
+        <div class="card-body">
+            <div class="apps-grid">
+                <div class="app-card">
+                    <div class="app-icon">🔧</div>
+                    <h3>NFC Tools</h3>
+                    <p><strong>Platform:</strong> Android/iOS</p>
+                    <div class="app-features">
+                        <ul>
+                            <li>✅ Gratuita</li>
+                            <li>✅ Interfaccia semplice</li>
+                            <li>✅ Supporto URL</li>
+                            <li>✅ Batch programming</li>
+                        </ul>
+                    </div>
+                    <div class="app-rating">⭐⭐⭐⭐⭐ Consigliata</div>
+                </div>
+                
+                <div class="app-card">
+                    <div class="app-icon">📝</div>
+                    <h3>TagWriter</h3>
+                    <p><strong>Platform:</strong> Android</p>
+                    <div class="app-features">
+                        <ul>
+                            <li>✅ Gratuita</li>
+                            <li>✅ NXP ufficiale</li>
+                            <li>✅ Templates</li>
+                            <li>✅ Protezione tag</li>
+                        </ul>
+                    </div>
+                    <div class="app-rating">⭐⭐⭐⭐ Alternativa</div>
+                </div>
+                
+                <div class="app-card">
+                    <div class="app-icon">🍎</div>
+                    <h3>NFC TagInfo</h3>
+                    <p><strong>Platform:</strong> iOS</p>
+                    <div class="app-features">
+                        <ul>
+                            <li>✅ Gratuita</li>
+                            <li>✅ Lettura avanzata</li>
+                            <li>✅ Diagnostica tag</li>
+                            <li>❌ Solo lettura</li>
+                        </ul>
+                    </div>
+                    <div class="app-rating">⭐⭐⭐ Solo test</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Procedura Dettagliata -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>📋 Procedura Passo-Passo</h2>
+        </div>
+        <div class="card-body">
+            <div class="procedure-steps">
+                <div class="procedure-section">
+                    <h3>🛠️ Preparazione</h3>
+                    <ol>
+                        <li>
+                            <strong>Scarica NFC Tools</strong>
+                            <p>Installa l'app "NFC Tools" dal Play Store o App Store</p>
+                        </li>
+                        <li>
+                            <strong>Abilita NFC</strong>
+                            <p>Vai in Impostazioni → Connessioni → NFC e abilita la funzione</p>
+                        </li>
+                        <li>
+                            <strong>Prepara i tag</strong>
+                            <p>Assicurati di avere tag NFC vuoti o riscrivibili (NTAG213/215/216)</p>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div class="procedure-section">
+                    <h3>✏️ Programmazione</h3>
+                    <ol>
+                        <li>
+                            <strong>Apri NFC Tools</strong>
+                            <p>Avvia l'app e seleziona "Scrivi"</p>
+                        </li>
+                        <li>
+                            <strong>Aggiungi URL</strong>
+                            <p>Tocca "Aggiungi record" → "URL/URI"</p>
+                        </li>
+                        <li>
+                            <strong>Incolla l'URL</strong>
+                            <p>Copia l'URL dall'app MasterWash e incollalo nel campo</p>
+                            <div class="url-example">
+                                <strong>Formato:</strong><br>
+                                <code>https://masterwash.up.railway.app/abbonamenti/nfc/[CODICE]</code>
+                            </div>
+                        </li>
+                        <li>
+                            <strong>Scrivi il tag</strong>
+                            <p>Tocca "Scrivi" e avvicina il tag NFC al telefono</p>
+                        </li>
+                        <li>
+                            <strong>Testa il tag</strong>
+                            <p>Allontana e riavvicina il tag per verificare che funzioni</p>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tipi di Tag Consigliati -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>🏷️ Tipi di Tag NFC Consigliati</h2>
+        </div>
+        <div class="card-body">
+            <div class="tags-grid">
+                <div class="tag-card recommended">
+                    <div class="tag-header">
+                        <h3>NTAG213</h3>
+                        <span class="tag-badge">Consigliato</span>
+                    </div>
+                    <div class="tag-specs">
+                        <ul>
+                            <li><strong>Memoria:</strong> 180 bytes</li>
+                            <li><strong>URL Supporto:</strong> ✅ Sì</li>
+                            <li><strong>Riscrivibile:</strong> ✅ Sì</li>
+                            <li><strong>Prezzo:</strong> € 0.50-1.00</li>
+                            <li><strong>Formato:</strong> Sticker, card, keychain</li>
+                        </ul>
+                    </div>
+                    <div class="tag-use">
+                        <strong>Perfetto per:</strong> URL MasterWash, utilizzo generale
+                    </div>
+                </div>
+                
+                <div class="tag-card">
+                    <div class="tag-header">
+                        <h3>NTAG215</h3>
+                        <span class="tag-badge">Alternative</span>
+                    </div>
+                    <div class="tag-specs">
+                        <ul>
+                            <li><strong>Memoria:</strong> 540 bytes</li>
+                            <li><strong>URL Supporto:</strong> ✅ Sì</li>
+                            <li><strong>Riscrivibile:</strong> ✅ Sì</li>
+                            <li><strong>Prezzo:</strong> € 1.00-1.50</li>
+                            <li><strong>Formato:</strong> Sticker, card</li>
+                        </ul>
+                    </div>
+                    <div class="tag-use">
+                        <strong>Perfetto per:</strong> Dati aggiuntivi, futuro upgrade
+                    </div>
+                </div>
+                
+                <div class="tag-card">
+                    <div class="tag-header">
+                        <h3>NTAG216</h3>
+                        <span class="tag-badge">Premium</span>
+                    </div>
+                    <div class="tag-specs">
+                        <ul>
+                            <li><strong>Memoria:</strong> 930 bytes</li>
+                            <li><strong>URL Supporto:</strong> ✅ Sì</li>
+                            <li><strong>Riscrivibile:</strong> ✅ Sì</li>
+                            <li><strong>Prezzo:</strong> € 1.50-2.00</li>
+                            <li><strong>Formato:</strong> Sticker, card</li>
+                        </ul>
+                    </div>
+                    <div class="tag-use">
+                        <strong>Perfetto per:</strong> Applicazioni avanzate, massima memoria
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risoluzione Problemi -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>🔧 Risoluzione Problemi</h2>
+        </div>
+        <div class="card-body">
+            <div class="troubleshooting">
+                <div class="issue">
+                    <h4>❌ Il tag non viene rilevato</h4>
+                    <div class="solutions">
+                        <ul>
+                            <li>Verifica che l'NFC sia abilitato sul telefono</li>
+                            <li>Rimuovi custodie metalliche o spesse</li>
+                            <li>Prova a posizionare il tag in punti diversi del telefono</li>
+                            <li>Assicurati che il tag non sia danneggiato</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="issue">
+                    <h4>❌ Il tag non apre l'URL corretto</h4>
+                    <div class="solutions">
+                        <ul>
+                            <li>Verifica che l'URL sia stato copiato correttamente</li>
+                            <li>Controlla che non ci siano spazi o caratteri extra</li>
+                            <li>Riprogramma il tag con l'URL corretto</li>
+                            <li>Testa l'URL manualmente nel browser</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="issue">
+                    <h4>❌ Il telefono non supporta NFC</h4>
+                    <div class="solutions">
+                        <ul>
+                            <li>Verifica le specifiche del telefono</li>
+                            <li>L'NFC è disponibile dalla maggior parte degli smartphone moderni</li>
+                            <li>iPhone: supporto da iPhone 7 in poi</li>
+                            <li>Android: supporto dalla maggior parte dei dispositivi dal 2012</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Best Practices -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>✨ Best Practices</h2>
+        </div>
+        <div class="card-body">
+            <div class="best-practices">
+                <div class="practice">
+                    <h4>🔒 Sicurezza</h4>
+                    <ul>
+                        <li>Non bloccare i tag in scrittura se devi aggiornarli</li>
+                        <li>Testa sempre i tag dopo la programmazione</li>
+                        <li>Mantieni backup degli URL programmati</li>
+                    </ul>
+                </div>
+                
+                <div class="practice">
+                    <h4>📍 Posizionamento</h4>
+                    <ul>
+                        <li>Posiziona i tag in punti facilmente accessibili</li>
+                        <li>Evita superfici metalliche che interferiscono</li>
+                        <li>Usa adesivi protettivi per tag esterni</li>
+                    </ul>
+                </div>
+                
+                <div class="practice">
+                    <h4>🏷️ Etichettatura</h4>
+                    <ul>
+                        <li>Aggiungi etichette visibili con codice abbonamento</li>
+                        <li>Includi istruzioni semplici per l'uso</li>
+                        <li>Mantieni registro dei tag programmati</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Link Utili -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>🔗 Link Utili</h2>
+        </div>
+        <div class="card-body">
+            <div class="links-grid">
+                <a href="https://play.google.com/store/apps/details?id=com.wakdev.wdnfc" target="_blank" class="link-card">
+                    <div class="link-icon">📱</div>
+                    <div class="link-content">
+                        <h4>NFC Tools (Android)</h4>
+                        <p>Download dall'Google Play Store</p>
+                    </div>
+                </a>
+                
+                <a href="https://apps.apple.com/app/nfc-tools/id1252962749" target="_blank" class="link-card">
+                    <div class="link-icon">🍎</div>
+                    <div class="link-content">
+                        <h4>NFC Tools (iOS)</h4>
+                        <p>Download dall'App Store</p>
+                    </div>
+                </a>
+                
+                <a href="https://nfc-forum.org/" target="_blank" class="link-card">
+                    <div class="link-icon">📚</div>
+                    <div class="link-content">
+                        <h4>NFC Forum</h4>
+                        <p>Documentazione tecnica ufficiale</p>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('abbonamenti.index') }}" class="link-card primary">
+                    <div class="link-icon">🔙</div>
+                    <div class="link-content">
+                        <h4>Torna agli Abbonamenti</h4>
+                        <p>Gestisci e crea nuovi abbonamenti</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.guida-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.intro-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: var(--white);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-xl);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+
+.intro-header h1 {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: 2rem;
+}
+
+.intro-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.125rem;
+}
+
+.info-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--gray-900);
+    font-size: 1.5rem;
+}
+
+.card-body {
+    padding: var(--spacing-lg);
+}
+
+.flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.step {
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: flex-start;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.step-content h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--gray-900);
+}
+
+.step-content p {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--gray-600);
+}
+
+.example {
+    background: var(--gray-50);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--info-color);
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.apps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.app-card {
+    background: var(--gray-50);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    text-align: center;
+    border: 2px solid var(--gray-200);
+}
+
+.app-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.app-card h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--gray-900);
+}
+
+.app-card p {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.app-features ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--spacing-md) 0;
+    text-align: left;
+}
+
+.app-features li {
+    margin: var(--spacing-xs) 0;
+    font-size: 0.875rem;
+}
+
+.app-rating {
+    font-weight: 600;
+    color: var(--success-color);
+    margin-top: var(--spacing-md);
+}
+
+.procedure-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.procedure-section h3 {
+    color: var(--primary-color);
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: 1.25rem;
+}
+
+.procedure-section ol {
+    padding-left: var(--spacing-lg);
+}
+
+.procedure-section li {
+    margin: var(--spacing-md) 0;
+}
+
+.procedure-section strong {
+    color: var(--gray-900);
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+.url-example {
+    background: var(--info-color);
+    color: var(--white);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    margin-top: var(--spacing-sm);
+    font-size: 0.75rem;
+}
+
+.tags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.tag-card {
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+}
+
+.tag-card.recommended {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.tag-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.tag-header h3 {
+    margin: 0;
+    color: var(--gray-900);
+}
+
+.tag-badge {
+    background: var(--success-color);
+    color: var(--white);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tag-specs ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--spacing-md) 0;
+}
+
+.tag-specs li {
+    margin: var(--spacing-xs) 0;
+    font-size: 0.875rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.tag-use {
+    background: var(--white);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    border-left: 4px solid var(--primary-color);
+}
+
+.troubleshooting {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.issue h4 {
+    color: var(--danger-color);
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.solutions ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.solutions li {
+    margin: var(--spacing-xs) 0;
+    color: var(--gray-700);
+}
+
+.best-practices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.practice h4 {
+    color: var(--primary-color);
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.practice ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.practice li {
+    margin: var(--spacing-xs) 0;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+.links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.link-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--gray-700);
+    transition: all var(--transition-fast);
+}
+
+.link-card:hover {
+    background: var(--gray-100);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.link-card.primary {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+.link-card.primary:hover {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+
+.link-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.link-content h4 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 0.875rem;
+}
+
+.link-content p {
+    margin: 0;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* Mobile Responsive */
+@media (max-width: 767px) {
+    .guida-container {
+        padding: var(--spacing-sm);
+    }
+    
+    .step {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .step-number {
+        align-self: center;
+    }
+    
+    .apps-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tags-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .best-practices {
+        grid-template-columns: 1fr;
+    }
+    
+    .links-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .link-card {
+        justify-content: center;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scroll per i link interni
+    const internalLinks = document.querySelectorAll('a[href^="#"]');
+    internalLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+    
+    // Evidenzia sezioni durante lo scroll
+    const sections = document.querySelectorAll('.info-card');
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.borderColor = 'var(--primary-color)';
+                setTimeout(() => {
+                    entry.target.style.borderColor = '';
+                }, 2000);
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    sections.forEach(section => observer.observe(section));
+});
+</script>
+{% endblock %}

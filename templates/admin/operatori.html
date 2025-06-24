@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Operatori - {{ app_name }}{% endblock %}
+
+{% block header_title %}👨‍💼 Gestione Operatori{% endblock %}
+
+{% block content %}
+<div class="operatori-container">
+    <!-- Header con ricerca e filtri -->
+    <div class="operatori-header">
+        <div class="header-actions">
+            <a href="{{ url_for('admin.nuovo_operatore') }}" class="btn btn-primary">
+                ➕ Nuovo Operatore
+            </a>
+            <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                ← Torna all'Amministrazione
+            </a>
+        </div>
+        
+        <form method="GET" class="search-form">
+            <div class="search-filters">
+                <div class="search-input-group">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search }}" 
+                           placeholder="Cerca per nome o username..."
+                           class="form-input">
+                    <button type="submit" class="btn btn-info">🔍</button>
+                </div>
+                
+                <select name="filtro" class="form-select" onchange="this.form.submit()">
+                    <option value="tutti" {{ 'selected' if filtro == 'tutti' }}>Tutti</option>
+                    <option value="attivi" {{ 'selected' if filtro == 'attivi' }}>Attivi</option>
+                    <option value="inattivi" {{ 'selected' if filtro == 'inattivi' }}>Inattivi</option>
+                    <option value="admin" {{ 'selected' if filtro == 'admin' }}>Amministratori</option>
+                </select>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Lista Operatori -->
+    <div class="operatori-grid">
+        {% for operatore in operatori.items %}
+        <div class="operatore-card">
+            <div class="operatore-header">
+                <div class="operatore-avatar">
+                    {% if operatore.ruolo == 'admin' %}
+                        👑
+                    {% else %}
+                        👤
+                    {% endif %}
+                </div>
+                <div class="operatore-info">
+                    <h3>{{ operatore.nome }}</h3>
+                    <p class="username">@{{ operatore.username }}</p>
+                </div>
+                <div class="operatore-status">
+                    <span class="status-badge {{ 'active' if operatore.attivo else 'inactive' }}">
+                        {{ 'Attivo' if operatore.attivo else 'Inattivo' }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="operatore-details">
+                <div class="detail-item">
+                    <span class="detail-label">Ruolo:</span>
+                    <span class="detail-value">
+                        <span class="role-badge {{ operatore.ruolo }}">
+                            {{ 'Amministratore' if operatore.ruolo == 'admin' else 'Operatore' }}
+                        </span>
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Registrato:</span>
+                    <span class="detail-value">{{ operatore.data_creazione.strftime('%d/%m/%Y') }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Accessi registrati:</span>
+                    <span class="detail-value">{{ operatore.accessi|length }}</span>
+                </div>
+            </div>
+            
+            <div class="operatore-actions">
+                <a href="{{ url_for('admin.modifica_operatore', id=operatore.id) }}" 
+                   class="btn btn-sm btn-info">
+                    ✏️ Modifica
+                </a>
+                
+                {% if operatore.id != current_user.id %}
+                <form method="POST" 
+                      action="{{ url_for('admin.elimina_operatore', id=operatore.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('Sei sicuro di voler eliminare questo operatore?')">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        🗑️ Elimina
+                    </button>
+                </form>
+                {% else %}
+                <span class="btn btn-sm btn-secondary disabled" title="Non puoi eliminare te stesso">
+                    🔒 Protetto
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Messaggio se nessun operatore -->
+    {% if not operatori.items %}
+    <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <h3>Nessun operatore trovato</h3>
+        <p>
+            {% if search or filtro != 'tutti' %}
+                Prova a modificare i filtri di ricerca.
+            {% else %}
+                Aggiungi il primo operatore al sistema.
+            {% endif %}
+        </p>
+        <a href="{{ url_for('admin.nuovo_operatore') }}" class="btn btn-primary">
+            ➕ Nuovo Operatore
+        </a>
+    </div>
+    {% endif %}
+    
+    <!-- Paginazione -->
+    {% if operatori.pages > 1 %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if operatori.has_prev %}
+                <a href="{{ url_for('admin.operatori', page=operatori.prev_num, search=search, filtro=filtro) }}" 
+                   class="pagination-link">← Precedente</a>
+            {% endif %}
+            
+            {% for page_num in operatori.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != operatori.page %}
+                        <a href="{{ url_for('admin.operatori', page=page_num, search=search, filtro=filtro) }}" 
+                           class="pagination-link">{{ page_num }}</a>
+                    {% else %}
+                        <span class="pagination-link active">{{ page_num }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="pagination-dots">…</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if operatori.has_next %}
+                <a href="{{ url_for('admin.operatori', page=operatori.next_num, search=search, filtro=filtro) }}" 
+                   class="pagination-link">Successiva →</a>
+            {% endif %}
+        </div>
+        
+        <div class="pagination-info">
+            Pagina {{ operatori.page }} di {{ operatori.pages }} 
+            ({{ operatori.total }} operatori totali)
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.operatori-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+}
+
+.operatori-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.search-form {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.search-filters {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-input-group {
+    display: flex;
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-input-group input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.search-input-group button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.operatori-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.operatore-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.operatore-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.operatore-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.operatore-avatar {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.operatore-info {
+    flex: 1;
+}
+
+.operatore-info h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.username {
+    margin: var(--spacing-xs) 0 0 0;
+    color: var(--gray-600);
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.operatore-status {
+    align-self: flex-start;
+}
+
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-badge.inactive {
+    background: var(--gray-400);
+    color: var(--white);
+}
+
+.operatore-details {
+    padding: var(--spacing-lg);
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.detail-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.role-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.role-badge.admin {
+    background: var(--warning-color);
+    color: var(--white);
+}
+
+.role-badge.operatore {
+    background: var(--info-color);
+    color: var(--white);
+}
+
+.operatore-actions {
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin-bottom: var(--spacing-md);
+    color: var(--gray-700);
+}
+
+.empty-state p {
+    margin-bottom: var(--spacing-lg);
+    color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+    .operatori-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .search-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-input-group {
+        min-width: auto;
+    }
+    
+    .operatore-actions {
+        flex-direction: column;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

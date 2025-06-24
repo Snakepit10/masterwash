@@ -46,6 +46,7 @@ class Cliente(db.Model):
     cognome = db.Column(db.String(50), nullable=False)
     telefono = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(100), nullable=True)
+    tipo_cliente = db.Column(db.String(20), nullable=True, default='privato')  # privato, business
     data_registrazione = db.Column(db.DateTime, default=datetime.utcnow)
     attivo = db.Column(db.Boolean, default=True, nullable=False)
     
@@ -66,6 +67,36 @@ class Cliente(db.Model):
         ).filter(
             Abbonamento.data_fine >= datetime.now().date()
         ).first()
+    
+    def ha_accesso_oggi(self):
+        """Verifica se il cliente ha già effettuato un accesso oggi"""
+        from sqlalchemy import func, and_
+        today = datetime.now().date()
+        
+        # Per i clienti business non c'è limite
+        if getattr(self, 'tipo_cliente', 'privato') == 'business':
+            return False
+        
+        # Per i clienti privati, verifica se hanno già fatto un accesso oggi
+        accesso_oggi = db.session.query(Accesso).join(Abbonamento).filter(
+            and_(
+                Abbonamento.cliente_id == self.id,
+                func.date(Accesso.data_ora) == today
+            )
+        ).first()
+        
+        return accesso_oggi is not None
+    
+    @property
+    def is_business(self):
+        """Verifica se il cliente è di tipo business"""
+        return getattr(self, 'tipo_cliente', 'privato') == 'business'
+    
+    @property
+    def tipo_cliente_display(self):
+        """Ritorna il tipo cliente formattato per la visualizzazione"""
+        tipo = getattr(self, 'tipo_cliente', 'privato')
+        return 'Business' if tipo == 'business' else 'Privato'
     
     def __repr__(self):
         return f'<Cliente {self.nome_completo}>'
@@ -98,9 +129,14 @@ class Abbonamento(db.Model):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # Se data_inizio non è specificata, usa oggi
+        if not self.data_inizio:
+            self.data_inizio = datetime.now().date()
+        # Genera codice NFC se non specificato
         if not self.codice_nfc:
             self.codice_nfc = self.genera_codice_nfc()
-        if not self.data_fine:
+        # Calcola data fine se non specificata
+        if not self.data_fine and self.tipo_abbonamento:
             self.calcola_data_fine()
     
     @staticmethod
@@ -111,8 +147,25 @@ class Abbonamento(db.Model):
             if not Abbonamento.query.filter_by(codice_nfc=codice).first():
                 return codice
     
+    @property
+    def url_nfc(self):
+        """Ritorna l'URL completo per il tag NFC"""
+        from flask import current_app, url_for
+        try:
+            with current_app.app_context():
+                # Usa il dominio locale configurato
+                base_url = current_app.config.get('BASE_URL', 'http://192.168.1.84:5000')
+                return f"{base_url}/abbonamenti/nfc/{self.codice_nfc}"
+        except:
+            # Fallback per quando non c'è app context
+            return f"http://192.168.1.84:5000/abbonamenti/nfc/{self.codice_nfc}"
+    
     def calcola_data_fine(self):
         """Calcola la data di fine abbonamento in base al tipo"""
+        # Se data_inizio non è impostata, usa la data corrente
+        if not self.data_inizio:
+            self.data_inizio = datetime.now().date()
+            
         if self.tipo_abbonamento == 'mensile':
             self.data_fine = self.data_inizio + timedelta(days=30)
         elif self.tipo_abbonamento == 'trimestrale':
@@ -158,17 +211,25 @@ class Abbonamento(db.Model):
     
     def registra_accesso(self, operatore_id, note=None):
         """Registra un nuovo accesso"""
-        if self.accessi_rimanenti > 0 and not self.is_scaduto:
-            accesso = Accesso(
-                abbonamento_id=self.id,
-                operatore_id=operatore_id,
-                note=note
-            )
-            db.session.add(accesso)
-            self.accessi_utilizzati += 1
-            db.session.commit()
-            return accesso
-        return None
+        # Verifica condizioni base
+        if self.accessi_rimanenti <= 0 or self.is_scaduto:
+            return None
+        
+        # Verifica limite giornaliero per clienti privati
+        tipo_cliente = getattr(self.cliente, 'tipo_cliente', 'privato')
+        if tipo_cliente == 'privato' and self.cliente.ha_accesso_oggi():
+            return None  # Cliente privato che ha già effettuato un accesso oggi
+        
+        # Registra l'accesso
+        accesso = Accesso(
+            abbonamento_id=self.id,
+            operatore_id=operatore_id,
+            note=note
+        )
+        db.session.add(accesso)
+        self.accessi_utilizzati += 1
+        db.session.commit()
+        return accesso
     
     def __repr__(self):
         return f'<Abbonamento {self.codice_nfc} - {self.cliente.nome_completo}>'

@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Storico Accessi - {{ super() }}{% endblock %}
+
+{% block header_title %}📅 Storico Accessi{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Storico Accessi</h2>
+        <p>Visualizza lo storico completo degli accessi registrati</p>
+    </div>
+    
+    <div class="card-body">
+        <!-- Filtri di ricerca -->
+        <form method="GET" class="search-form">
+            <div class="search-row">
+                <div class="search-group">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search }}" 
+                           placeholder="Cerca per nome, targa o NFC..." 
+                           class="form-input">
+                </div>
+                
+                <div class="search-group">
+                    <label class="form-label">Da:</label>
+                    <input type="date" 
+                           name="data_da" 
+                           value="{{ data_da }}" 
+                           class="form-input">
+                </div>
+                
+                <div class="search-group">
+                    <label class="form-label">A:</label>
+                    <input type="date" 
+                           name="data_a" 
+                           value="{{ data_a }}" 
+                           class="form-input">
+                </div>
+                
+                <div class="search-group">
+                    <label class="form-label">Operatore:</label>
+                    <select name="operatore_id" class="form-select">
+                        <option value="">Tutti gli operatori</option>
+                        {% for operatore in operatori %}
+                            <option value="{{ operatore.id }}" 
+                                    {% if operatore.id|string == operatore_id|string %}selected{% endif %}>
+                                {{ operatore.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="search-actions">
+                    <button type="submit" class="btn btn-primary">🔍 Cerca</button>
+                    <a href="{{ url_for('accessi.storico') }}" class="btn btn-secondary">↻ Reset</a>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Statistiche rapide -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ accessi.total }}</div>
+                <div class="stat-label">Accessi Totali</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ accessi.items|length }}</div>
+                <div class="stat-label">In questa pagina</div>
+            </div>
+        </div>
+        
+        <!-- Lista accessi -->
+        {% if accessi.items %}
+            <div class="accessi-list">
+                {% for accesso in accessi.items %}
+                    <div class="accesso-item">
+                        <div class="accesso-header">
+                            <div class="accesso-cliente">
+                                <strong>{{ accesso.abbonamento.cliente.nome_completo }}</strong>
+                                <span class="accesso-targa">{{ accesso.abbonamento.targa }}</span>
+                            </div>
+                            <div class="accesso-data">
+                                {{ accesso.data_ora.strftime('%d/%m/%Y %H:%M') }}
+                            </div>
+                        </div>
+                        
+                        <div class="accesso-details">
+                            <div class="accesso-info">
+                                <span class="info-item">
+                                    🎫 {{ accesso.abbonamento.codice_nfc }}
+                                </span>
+                                <span class="info-item">
+                                    👤 {{ accesso.operatore.nome }}
+                                </span>
+                                {% if accesso.note %}
+                                    <span class="info-item">
+                                        📝 {{ accesso.note }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="accesso-actions">
+                                <a href="{{ url_for('abbonamenti.dettaglio', id=accesso.abbonamento.id) }}" 
+                                   class="btn btn-sm btn-secondary">
+                                    👁️ Dettaglio
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Paginazione -->
+            {% if accessi.pages > 1 %}
+                <div class="pagination">
+                    {% if accessi.has_prev %}
+                        <a href="{{ url_for('accessi.storico', page=accessi.prev_num, search=search, data_da=data_da, data_a=data_a, operatore_id=operatore_id) }}" 
+                           class="btn btn-secondary">← Precedente</a>
+                    {% endif %}
+                    
+                    <span class="pagination-info">
+                        Pagina {{ accessi.page }} di {{ accessi.pages }}
+                        ({{ accessi.total }} accessi totali)
+                    </span>
+                    
+                    {% if accessi.has_next %}
+                        <a href="{{ url_for('accessi.storico', page=accessi.next_num, search=search, data_da=data_da, data_a=data_a, operatore_id=operatore_id) }}" 
+                           class="btn btn-secondary">Successiva →</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📅</div>
+                <h3>Nessun accesso trovato</h3>
+                <p>Non ci sono accessi che corrispondono ai criteri di ricerca.</p>
+                {% if search or data_da or data_a or operatore_id %}
+                    <a href="{{ url_for('accessi.storico') }}" class="btn btn-primary">
+                        Visualizza tutti gli accessi
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.search-form {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.search-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: end;
+}
+
+.search-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.search-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.accessi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.accesso-item {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: box-shadow 0.2s;
+}
+
+.accesso-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.accesso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.accesso-cliente {
+    display: flex;
+    flex-direction: column;
+}
+
+.accesso-targa {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-family: monospace;
+}
+
+.accesso-data {
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.accesso-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.accesso-info {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.info-item {
+    font-size: 0.875rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+    }
+    
+    .search-group {
+        min-width: unset;
+    }
+    
+    .accesso-header,
+    .accesso-details {
+        flex-direction: column;
+        align-items: start;
+        gap: 0.5rem;
+    }
+    
+    .accesso-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,586 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Clienti - {{ super() }}{% endblock %}
+
+{% block header_title %}👥 Gestione Clienti{% endblock %}
+
+{% block content %}
+<div class="clienti-container">
+    
+    <!-- Filtri e Ricerca -->
+    <div class="filters-card">
+        <form method="GET" class="filters-form">
+            <div class="filters-row">
+                <div class="search-group">
+                    <input type="text" name="search" value="{{ search }}" 
+                           placeholder="Cerca per nome, telefono o email..." 
+                           class="form-input search-input">
+                    <button type="submit" class="btn btn-primary search-btn">🔍</button>
+                </div>
+                
+                <div class="filter-group">
+                    <select name="filtro" class="form-select filter-select" onchange="this.form.submit()">
+                        <option value="tutti" {% if filtro == 'tutti' %}selected{% endif %}>Tutti i Clienti</option>
+                        <option value="con_abbonamenti_attivi" {% if filtro == 'con_abbonamenti_attivi' %}selected{% endif %}>Con Abbonamenti Attivi</option>
+                        <option value="con_abbonamenti_scaduti" {% if filtro == 'con_abbonamenti_scaduti' %}selected{% endif %}>Con Abbonamenti Scaduti</option>
+                        <option value="con_abbonamenti_in_scadenza" {% if filtro == 'con_abbonamenti_in_scadenza' %}selected{% endif %}>Abbonamenti in Scadenza</option>
+                        <option value="pagamenti_in_sospeso" {% if filtro == 'pagamenti_in_sospeso' %}selected{% endif %}>Pagamenti in Sospeso</option>
+                        <option value="senza_abbonamenti" {% if filtro == 'senza_abbonamenti' %}selected{% endif %}>Senza Abbonamenti</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Statistiche Rapide -->
+    <div class="quick-stats">
+        <div class="stat-item">
+            <span class="stat-number">{{ clienti_paginated.total }}</span>
+            <span class="stat-label">Clienti Totali</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ clienti_con_stats | selectattr('stats.abbonamenti_attivi', 'greaterthan', 0) | list | length }}</span>
+            <span class="stat-label">Con Abbonamenti</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ clienti_con_stats | selectattr('stats.abbonamenti_in_scadenza', 'greaterthan', 0) | list | length }}</span>
+            <span class="stat-label">In Scadenza</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ clienti_con_stats | selectattr('stats.importo_dovuto', 'greaterthan', 0) | list | length }}</span>
+            <span class="stat-label">Pagamenti Sospesi</span>
+        </div>
+    </div>
+    
+    <!-- Lista Clienti -->
+    {% if clienti_con_stats %}
+        <div class="clienti-list">
+            {% for item in clienti_con_stats %}
+                {% set cliente = item.cliente %}
+                {% set stats = item.stats %}
+                
+                <div class="cliente-card">
+                    <div class="cliente-header">
+                        <div class="cliente-info">
+                            <h3 class="cliente-nome">
+                                <a href="{{ url_for('clienti.dettaglio', id=cliente.id) }}">
+                                    {{ cliente.nome_completo }}
+                                </a>
+                            </h3>
+                            <div class="cliente-contatti">
+                                <span class="telefono">📞 {{ cliente.telefono }}</span>
+                                {% if cliente.email %}
+                                    <span class="email">✉️ {{ cliente.email }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="cliente-meta">
+                                <span>{{ cliente.tipo_cliente_display }} - Cliente dal {{ cliente.data_registrazione.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="cliente-status">
+                            {% if stats.abbonamenti_attivi > 0 %}
+                                <span class="status-badge active">{{ stats.abbonamenti_attivi }} Attivo/i</span>
+                            {% else %}
+                                <span class="status-badge inactive">Nessun Abbonamento</span>
+                            {% endif %}
+                            
+                            {% if stats.importo_dovuto > 0 %}
+                                <span class="status-badge warning">€ {{ "%.2f"|format(stats.importo_dovuto) }} Dovuti</span>
+                            {% endif %}
+                            
+                            {% if stats.abbonamenti_in_scadenza > 0 %}
+                                <span class="status-badge danger">{{ stats.abbonamenti_in_scadenza }} In Scadenza</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if stats.abbonamenti_attivi > 0 %}
+                    <div class="cliente-abbonamenti">
+                        <div class="abbonamenti-grid">
+                            {% for abbonamento in stats.abbonamenti_dettaglio %}
+                                <div class="abbonamento-summary">
+                                    <div class="abbonamento-targa">
+                                        <span class="targa">{{ abbonamento.targa }}</span>
+                                        <span class="tipo">{{ abbonamento.tipo_abbonamento | title }}</span>
+                                    </div>
+                                    
+                                    <div class="abbonamento-accessi">
+                                        <div class="accessi-progress">
+                                            <div class="progress-bar-mini">
+                                                <div class="progress-fill-mini" 
+                                                     style="width: {{ (abbonamento.accessi_utilizzati / abbonamento.accessi_totali * 100) if abbonamento.accessi_totali > 0 else 0 }}%"></div>
+                                            </div>
+                                            <span class="accessi-text">
+                                                {{ abbonamento.accessi_utilizzati }}/{{ abbonamento.accessi_totali }}
+                                                <small class="accessi-rimanenti {{ abbonamento.colore_accessi }}">
+                                                    ({{ abbonamento.accessi_rimanenti }} rimasti)
+                                                </small>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="abbonamento-scadenza">
+                                        {% if abbonamento.is_scaduto %}
+                                            <span class="scadenza danger">Scaduto</span>
+                                        {% elif abbonamento.is_in_scadenza %}
+                                            <span class="scadenza warning">{{ abbonamento.giorni_alla_scadenza }} giorni</span>
+                                        {% else %}
+                                            <span class="scadenza success">{{ abbonamento.data_fine.strftime('%d/%m/%Y') }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="abbonamento-pagamento">
+                                        {% if abbonamento.stato_pagamento == 'pagato' %}
+                                            <span class="pagamento success">✅ Pagato</span>
+                                        {% else %}
+                                            <span class="pagamento warning">⏳ € {{ "%.2f"|format(abbonamento.prezzo) }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="cliente-actions">
+                        <a href="{{ url_for('clienti.dettaglio', id=cliente.id) }}" 
+                           class="btn btn-sm btn-primary">
+                            👁️ Dettaglio
+                        </a>
+                        <a href="{{ url_for('abbonamenti.nuovo') }}" 
+                           class="btn btn-sm btn-success">
+                            ➕ Nuovo Abbonamento
+                        </a>
+                        {% if stats.abbonamenti_attivi > 0 %}
+                            <a href="{{ url_for('accessi.storico', search=cliente.telefono) }}" 
+                               class="btn btn-sm btn-secondary">
+                                📅 Storico Accessi
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Paginazione -->
+        {% if clienti_paginated.pages > 1 %}
+            <div class="pagination">
+                {% if clienti_paginated.has_prev %}
+                    <a href="{{ url_for('clienti.index', page=clienti_paginated.prev_num, search=search, filtro=filtro) }}" 
+                       class="btn btn-secondary">← Precedente</a>
+                {% endif %}
+                
+                <span class="pagination-info">
+                    Pagina {{ clienti_paginated.page }} di {{ clienti_paginated.pages }}
+                    ({{ clienti_paginated.total }} clienti totali)
+                </span>
+                
+                {% if clienti_paginated.has_next %}
+                    <a href="{{ url_for('clienti.index', page=clienti_paginated.next_num, search=search, filtro=filtro) }}" 
+                       class="btn btn-secondary">Successiva →</a>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <h3>Nessun cliente trovato</h3>
+            <p>Non ci sono clienti che corrispondono ai criteri di ricerca.</p>
+            {% if search or filtro != 'tutti' %}
+                <a href="{{ url_for('clienti.index') }}" class="btn btn-primary">
+                    Visualizza tutti i clienti
+                </a>
+            {% else %}
+                <a href="{{ url_for('abbonamenti.nuovo') }}" class="btn btn-primary">
+                    Crea il primo abbonamento
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.clienti-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.filters-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.filters-form {
+    width: 100%;
+}
+
+.filters-row {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: end;
+}
+
+.search-group {
+    flex: 2;
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-input {
+    flex: 1;
+}
+
+.search-btn {
+    flex-shrink: 0;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.stat-item {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.clienti-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.cliente-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    transition: box-shadow var(--transition-fast);
+}
+
+.cliente-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.cliente-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: var(--spacing-md);
+}
+
+.cliente-info {
+    flex: 1;
+}
+
+.cliente-nome {
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.cliente-nome a {
+    color: var(--gray-900);
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.cliente-nome a:hover {
+    color: var(--primary-color);
+}
+
+.cliente-contatti {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.cliente-contatti span {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.cliente-meta {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+.cliente-status {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    align-items: end;
+}
+
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-badge.active {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-badge.inactive {
+    background: var(--gray-400);
+    color: var(--white);
+}
+
+.status-badge.warning {
+    background: var(--warning-color);
+    color: var(--white);
+}
+
+.status-badge.danger {
+    background: var(--danger-color);
+    color: var(--white);
+}
+
+.cliente-abbonamenti {
+    margin-bottom: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--gray-200);
+}
+
+.abbonamenti-grid {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.abbonamento-summary {
+    display: grid;
+    grid-template-columns: 150px 1fr 100px 100px;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+}
+
+.abbonamento-targa {
+    display: flex;
+    flex-direction: column;
+}
+
+.targa {
+    font-family: monospace;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--gray-900);
+}
+
+.tipo {
+    font-size: 0.75rem;
+    color: var(--gray-600);
+}
+
+.abbonamento-accessi {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.accessi-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.progress-bar-mini {
+    width: 100%;
+    height: 6px;
+    background: var(--gray-200);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill-mini {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+    transition: width 0.3s ease;
+}
+
+.accessi-text {
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+.accessi-rimanenti {
+    font-weight: 400;
+}
+
+.accessi-rimanenti.success {
+    color: var(--success-color);
+}
+
+.accessi-rimanenti.warning {
+    color: var(--warning-color);
+}
+
+.accessi-rimanenti.danger {
+    color: var(--danger-color);
+}
+
+.abbonamento-scadenza,
+.abbonamento-pagamento {
+    text-align: center;
+}
+
+.scadenza,
+.pagamento {
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.scadenza.success,
+.pagamento.success {
+    background: var(--success-light);
+    color: var(--success-dark);
+}
+
+.scadenza.warning,
+.pagamento.warning {
+    background: var(--warning-light);
+    color: var(--warning-dark);
+}
+
+.scadenza.danger {
+    background: var(--danger-light);
+    color: var(--danger-dark);
+}
+
+.cliente-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--gray-200);
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--gray-200);
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-lg);
+}
+
+.empty-state h3 {
+    margin-bottom: var(--spacing-md);
+    color: var(--gray-700);
+}
+
+.empty-state p {
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+    .filters-row {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .search-group {
+        flex-direction: column;
+    }
+    
+    .filter-group {
+        min-width: unset;
+    }
+    
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .cliente-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .cliente-status {
+        align-items: start;
+    }
+    
+    .abbonamento-summary {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+        text-align: left;
+    }
+    
+    .abbonamento-scadenza,
+    .abbonamento-pagamento {
+        text-align: left;
+    }
+    
+    .cliente-actions {
+        justify-content: center;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+}
+</style>
+{% endblock %}

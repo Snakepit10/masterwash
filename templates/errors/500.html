@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Errore del Server - {{ app_name }}{% endblock %}
+{% block body_class %}error-page{% endblock %}
+
+{% block header_title %}Errore 500{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <div class="error-icon">⚠️</div>
+        <h1 class="error-title">Errore del Server</h1>
+        <p class="error-message">
+            Si è verificato un errore interno del server. 
+            Riprova tra qualche istante.
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                🏠 Torna alla Dashboard
+            </a>
+            <a href="javascript:location.reload()" class="btn btn-secondary">
+                🔄 Ricarica Pagina
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-dark) 100%);
+}
+
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: var(--spacing-lg);
+}
+
+.error-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-2xl);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 100%;
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-title {
+    color: var(--danger-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.error-message {
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-xl);
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+    .error-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

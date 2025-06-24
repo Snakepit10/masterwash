@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Amministrazione - {{ app_name }}{% endblock %}
+
+{% block header_title %}⚙️ Amministrazione{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Statistiche Generali -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-content">
+                <h3>{{ stats.operatori_totali }}</h3>
+                <p>Operatori Totali</p>
+                <small>{{ stats.operatori_attivi }} attivi</small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">🤝</div>
+            <div class="stat-content">
+                <h3>{{ stats.clienti_totali }}</h3>
+                <p>Clienti Totali</p>
+                <small>{{ stats.clienti_attivi }} attivi</small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-content">
+                <h3>{{ stats.abbonamenti_attivi }}</h3>
+                <p>Abbonamenti Attivi</p>
+                <small>In corso</small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <h3>{{ stats.accessi_oggi }}</h3>
+                <p>Accessi Oggi</p>
+                <small>{{ stats.accessi_mese }} questo mese</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiche Clienti per Tipo -->
+    {% if stats.clienti_privati > 0 or stats.clienti_business > 0 %}
+    <div class="section-card">
+        <h2>📊 Clienti per Tipo</h2>
+        <div class="client-type-stats">
+            <div class="type-stat">
+                <div class="type-icon">👤</div>
+                <div class="type-info">
+                    <span class="type-count">{{ stats.clienti_privati }}</span>
+                    <span class="type-label">Clienti Privati</span>
+                </div>
+            </div>
+            <div class="type-stat">
+                <div class="type-icon">🏢</div>
+                <div class="type-info">
+                    <span class="type-count">{{ stats.clienti_business }}</span>
+                    <span class="type-label">Clienti Business</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Menu Gestione -->
+    <div class="section-card">
+        <h2>🛠️ Gestione Sistema</h2>
+        <div class="admin-menu">
+            <a href="{{ url_for('admin.operatori') }}" class="admin-menu-item">
+                <div class="menu-icon">👨‍💼</div>
+                <div class="menu-content">
+                    <h3>Gestione Operatori</h3>
+                    <p>Crea, modifica ed elimina operatori</p>
+                </div>
+                <div class="menu-arrow">→</div>
+            </a>
+            
+            <a href="{{ url_for('admin.sistema') }}" class="admin-menu-item">
+                <div class="menu-icon">🗄️</div>
+                <div class="menu-content">
+                    <h3>Informazioni Sistema</h3>
+                    <p>Database, backup e configurazione</p>
+                </div>
+                <div class="menu-arrow">→</div>
+            </a>
+            
+            <a href="{{ url_for('admin.reports') }}" class="admin-menu-item">
+                <div class="menu-icon">📈</div>
+                <div class="menu-content">
+                    <h3>Report e Statistiche</h3>
+                    <p>Analisi utilizzo e performance</p>
+                </div>
+                <div class="menu-arrow">→</div>
+            </a>
+            
+            <a href="{{ url_for('clienti.index') }}" class="admin-menu-item">
+                <div class="menu-icon">👥</div>
+                <div class="menu-content">
+                    <h3>Gestione Clienti</h3>
+                    <p>Visualizza e gestisci tutti i clienti</p>
+                </div>
+                <div class="menu-arrow">→</div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Operatori Recenti -->
+    {% if operatori_recenti %}
+    <div class="section-card">
+        <h2>👨‍💼 Operatori Recenti</h2>
+        <div class="recent-list">
+            {% for operatore in operatori_recenti %}
+            <div class="recent-item">
+                <div class="recent-info">
+                    <span class="recent-name">{{ operatore.nome }}</span>
+                    <span class="recent-detail">@{{ operatore.username }} - {{ operatore.ruolo.title() }}</span>
+                </div>
+                <div class="recent-status">
+                    <span class="status-badge {{ 'active' if operatore.attivo else 'inactive' }}">
+                        {{ 'Attivo' if operatore.attivo else 'Inattivo' }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Accessi Recenti -->
+    {% if accessi_recenti %}
+    <div class="section-card">
+        <h2>🚪 Ultimi Accessi</h2>
+        <div class="recent-list">
+            {% for accesso in accessi_recenti[:5] %}
+            <div class="recent-item">
+                <div class="recent-info">
+                    <span class="recent-name">{{ accesso.abbonamento.cliente.nome_completo }}</span>
+                    <span class="recent-detail">{{ accesso.abbonamento.targa }} - {{ accesso.data_ora.strftime('%d/%m %H:%M') }}</span>
+                </div>
+                <div class="recent-meta">
+                    <span class="recent-operator">{{ accesso.operatore.nome }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.admin-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-content p {
+    margin: var(--spacing-xs) 0;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.stat-content small {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+.section-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-xl);
+}
+
+.section-card h2 {
+    margin: 0 0 var(--spacing-lg) 0;
+    color: var(--gray-900);
+    border-bottom: 2px solid var(--gray-100);
+    padding-bottom: var(--spacing-md);
+}
+
+.client-type-stats {
+    display: flex;
+    gap: var(--spacing-xl);
+    flex-wrap: wrap;
+}
+
+.type-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    flex: 1;
+    min-width: 200px;
+}
+
+.type-icon {
+    font-size: 2rem;
+}
+
+.type-count {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.type-label {
+    display: block;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.admin-menu {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.admin-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--transition-fast);
+    border: 2px solid transparent;
+}
+
+.admin-menu-item:hover {
+    background: var(--primary-color);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.menu-icon {
+    font-size: 2rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.menu-content {
+    flex: 1;
+}
+
+.menu-content h3 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.menu-content p {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.admin-menu-item:hover .menu-content p {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.menu-arrow {
+    font-size: 1.5rem;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+
+.recent-list {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+}
+
+.recent-name {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.recent-detail {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-top: var(--spacing-xs);
+}
+
+.recent-operator {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-badge.inactive {
+    background: var(--gray-400);
+    color: var(--white);
+}
+
+@media (max-width: 768px) {
+    .client-type-stats {
+        flex-direction: column;
+    }
+    
+    .admin-menu-item {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
+    
+    .menu-arrow {
+        display: none;
+    }
+}
+</style>
+{% endblock %}

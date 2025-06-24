@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazione Stampante - {{ super() }}{% endblock %}
+
+{% block header_title %}🖨️ Configurazione Stampante{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Impostazioni Stampante</h2>
+        <p>Configura la stampante per la stampa di tessere e documenti</p>
+    </div>
+    
+    <div class="card-body">
+        <form method="POST" class="form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.nome.label(class="form-label") }}
+                {{ form.nome(class="form-input") }}
+                {% if form.nome.errors %}
+                    <div class="form-error">
+                        {% for error in form.nome.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.ip_stampante.label(class="form-label") }}
+                {{ form.ip_stampante(class="form-input", placeholder="192.168.1.100") }}
+                {% if form.ip_stampante.errors %}
+                    <div class="form-error">
+                        {% for error in form.ip_stampante.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.porta.label(class="form-label") }}
+                {{ form.porta(class="form-input", placeholder="9100") }}
+                {% if form.porta.errors %}
+                    <div class="form-error">
+                        {% for error in form.porta.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.tipo_stampante.label(class="form-label") }}
+                {{ form.tipo_stampante(class="form-select") }}
+                {% if form.tipo_stampante.errors %}
+                    <div class="form-error">
+                        {% for error in form.tipo_stampante.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.larghezza_carta.label(class="form-label") }}
+                {{ form.larghezza_carta(class="form-select") }}
+                {% if form.larghezza_carta.errors %}
+                    <div class="form-error">
+                        {% for error in form.larghezza_carta.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    {{ form.attiva() }}
+                    {{ form.attiva.label() }}
+                </div>
+                {% if form.attiva.errors %}
+                    <div class="form-error">
+                        {% for error in form.attiva.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    💾 Salva Configurazione
+                </button>
+                <a href="{{ url_for('stampa.test') }}" class="btn btn-secondary">
+                    🧪 Test Stampante
+                </a>
+            </div>
+        </form>
+        
+        {% if config %}
+        <div class="config-info">
+            <h3>Configurazione Attuale</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Nome:</strong> {{ config.nome }}
+                </div>
+                <div class="info-item">
+                    <strong>IP:</strong> {{ config.ip_stampante }}
+                </div>
+                <div class="info-item">
+                    <strong>Porta:</strong> {{ config.porta }}
+                </div>
+                <div class="info-item">
+                    <strong>Tipo:</strong> {{ config.tipo_stampante }}
+                </div>
+                <div class="info-item">
+                    <strong>Larghezza:</strong> {{ config.larghezza_carta }}mm
+                </div>
+                <div class="info-item">
+                    <strong>Status:</strong> 
+                    {% if config.attiva %}
+                        <span class="status status-active">✅ Attiva</span>
+                    {% else %}
+                        <span class="status status-inactive">❌ Disattiva</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

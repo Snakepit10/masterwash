@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Report - {{ app_name }}{% endblock %}
+
+{% block header_title %}📈 Report e Statistiche{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <div class="header-actions">
+        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+            ← Torna all'Amministrazione
+        </a>
+        
+        <form method="GET" class="period-selector">
+            <select name="periodo" onchange="this.form.submit()" class="form-select">
+                <option value="7" {{ 'selected' if periodo == '7' }}>Ultimi 7 giorni</option>
+                <option value="30" {{ 'selected' if periodo == '30' }}>Ultimo mese</option>
+                <option value="90" {{ 'selected' if periodo == '90' }}>Ultimi 3 mesi</option>
+                <option value="365" {{ 'selected' if periodo == '365' }}>Ultimo anno</option>
+            </select>
+        </form>
+    </div>
+    
+    <!-- Accessi Giornalieri -->
+    <div class="section-card">
+        <h2>📊 Accessi Giornalieri</h2>
+        
+        <div class="chart-container">
+            <canvas id="accessiChart" width="400" height="200"></canvas>
+        </div>
+        
+        {% if not accessi_giornalieri %}
+        <div class="empty-chart">
+            <p>Nessun dato disponibile per il periodo selezionato</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Top Clienti -->
+    <div class="section-card">
+        <h2>🏆 Top Clienti (Periodo Selezionato)</h2>
+        
+        {% if top_clienti %}
+        <div class="ranking-list">
+            {% for cliente in top_clienti %}
+            <div class="ranking-item">
+                <div class="ranking-position">{{ loop.index }}</div>
+                <div class="ranking-info">
+                    <span class="ranking-name">{{ cliente['cliente'] }}</span>
+                    <span class="ranking-detail">{{ cliente['accessi'] }} accessi</span>
+                </div>
+                <div class="ranking-bar">
+                    <div class="ranking-fill" style="width: {{ (cliente['accessi'] / top_clienti[0]['accessi'] * 100)|round(1) }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>Nessun accesso registrato nel periodo selezionato</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Top Operatori -->
+    <div class="section-card">
+        <h2>👨‍💼 Operatori Più Attivi</h2>
+        
+        {% if top_operatori %}
+        <div class="ranking-list">
+            {% for operatore in top_operatori %}
+            <div class="ranking-item">
+                <div class="ranking-position">{{ loop.index }}</div>
+                <div class="ranking-info">
+                    <span class="ranking-name">{{ operatore.operatore }}</span>
+                    <span class="ranking-detail">{{ operatore.accessi }} accessi registrati</span>
+                </div>
+                <div class="ranking-bar">
+                    <div class="ranking-fill operator" style="width: {{ (operatore.accessi / top_operatori[0].accessi * 100)|round(1) }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>Nessun accesso registrato nel periodo selezionato</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Statistiche Rapide -->
+    <div class="section-card">
+        <h2>⚡ Statistiche Rapide</h2>
+        
+        <div class="quick-stats">
+            <div class="quick-stat">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h3>{{ accessi_giornalieri|length }}</h3>
+                    <p>Giorni con Accessi</p>
+                </div>
+            </div>
+            
+            <div class="quick-stat">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3>
+                        {% if accessi_giornalieri %}
+                            {{ (accessi_giornalieri|map(attribute='count')|sum / accessi_giornalieri|length)|round(1) }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h3>
+                    <p>Media Accessi/Giorno</p>
+                </div>
+            </div>
+            
+            <div class="quick-stat">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <h3>
+                        {% if accessi_giornalieri %}
+                            {{ accessi_giornalieri|map(attribute='count')|max }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h3>
+                    <p>Picco Giornaliero</p>
+                </div>
+            </div>
+            
+            <div class="quick-stat">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <h3>{{ top_clienti|length }}</h3>
+                    <p>Clienti Attivi</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Azioni Export -->
+    <div class="section-card">
+        <h2>📤 Esportazione Dati</h2>
+        
+        <div class="export-actions">
+            <button onclick="exportChartData()" class="btn btn-info">
+                📊 Esporta Dati Grafico
+            </button>
+            <button onclick="exportTopClients()" class="btn btn-success">
+                🏆 Esporta Top Clienti
+            </button>
+            <button onclick="exportTopOperators()" class="btn btn-warning">
+                👨‍💼 Esporta Top Operatori
+            </button>
+            <button onclick="exportFullReport()" class="btn btn-primary">
+                📋 Report Completo
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.reports-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+}
+
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.period-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.section-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-xl);
+}
+
+.section-card h2 {
+    margin: 0 0 var(--spacing-lg) 0;
+    color: var(--gray-900);
+    border-bottom: 2px solid var(--gray-100);
+    padding-bottom: var(--spacing-md);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: var(--spacing-lg) 0;
+}
+
+.empty-chart,
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--gray-500);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+}
+
+.ranking-list {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.ranking-item {
+    display: grid;
+    grid-template-columns: 40px 1fr 150px;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
+}
+
+.ranking-item:hover {
+    background: var(--gray-100);
+}
+
+.ranking-position {
+    width: 30px;
+    height: 30px;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.ranking-item:nth-child(1) .ranking-position {
+    background: var(--warning-color);
+}
+
+.ranking-item:nth-child(2) .ranking-position {
+    background: var(--gray-400);
+}
+
+.ranking-item:nth-child(3) .ranking-position {
+    background: #CD7F32;
+}
+
+.ranking-name {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.ranking-detail {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-top: var(--spacing-xs);
+}
+
+.ranking-bar {
+    position: relative;
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ranking-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 4px;
+    transition: width var(--transition-normal);
+}
+
+.ranking-fill.operator {
+    background: var(--success-color);
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.quick-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+}
+
+.quick-stat .stat-icon {
+    font-size: 2rem;
+}
+
+.quick-stat .stat-content h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.quick-stat .stat-content p {
+    margin: var(--spacing-xs) 0 0 0;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.export-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+    .ranking-item {
+        grid-template-columns: 40px 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .ranking-bar {
+        grid-column: 1 / -1;
+        margin-top: var(--spacing-sm);
+    }
+    
+    .export-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Dati per il grafico
+const accessiData = {
+    labels: [
+        {% for accesso in accessi_giornalieri %}
+        '{{ accesso['data'].strftime("%d/%m") }}'{{ ',' if not loop.last }}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'Accessi Giornalieri',
+        data: [
+            {% for accesso in accessi_giornalieri %}
+            {{ accesso['count'] }}{{ ',' if not loop.last }}
+            {% endfor %}
+        ],
+        borderColor: 'rgb(37, 99, 235)',
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        tension: 0.4,
+        fill: true
+    }]
+};
+
+// Configurazione grafico
+const config = {
+    type: 'line',
+    data: accessiData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
+        }
+    }
+};
+
+// Crea grafico
+{% if accessi_giornalieri %}
+const ctx = document.getElementById('accessiChart').getContext('2d');
+const accessiChart = new Chart(ctx, config);
+{% endif %}
+
+// Funzioni di export
+function exportChartData() {
+    const data = [
+        'Data,Accessi',
+        {% for accesso in accessi_giornalieri %}
+        '{{ accesso['data'].strftime("%d/%m/%Y") }},{{ accesso['count'] }}'{{ ',' if not loop.last }}
+        {% endfor %}
+    ];
+    
+    downloadCSV(data.join('\n'), 'accessi_giornalieri.csv');
+}
+
+function exportTopClients() {
+    const data = [
+        'Posizione,Cliente,Accessi',
+        {% for cliente in top_clienti %}
+        '{{ loop.index }},"{{ cliente['cliente'] }}",{{ cliente['accessi'] }}'{{ ',' if not loop.last }}
+        {% endfor %}
+    ];
+    
+    downloadCSV(data.join('\n'), 'top_clienti.csv');
+}
+
+function exportTopOperators() {
+    const data = [
+        'Posizione,Operatore,Accessi',
+        {% for operatore in top_operatori %}
+        '{{ loop.index }},"{{ operatore.operatore }}",{{ operatore.accessi }}'{{ ',' if not loop.last }}
+        {% endfor %}
+    ];
+    
+    downloadCSV(data.join('\n'), 'top_operatori.csv');
+}
+
+function exportFullReport() {
+    const report = `REPORT MASTERWASH
+Periodo: {{ periodo }} giorni
+Generato: ${new Date().toLocaleString()}
+
+=== STATISTICHE GENERALI ===
+Giorni con accessi: {{ accessi_giornalieri|length }}
+Media accessi/giorno: {{ (accessi_giornalieri|map(attribute='count')|sum / accessi_giornalieri|length)|round(1) if accessi_giornalieri else 0 }}
+Picco giornaliero: {{ accessi_giornalieri|map(attribute='count')|max if accessi_giornalieri else 0 }}
+Clienti attivi: {{ top_clienti|length }}
+
+=== TOP CLIENTI ===
+{% for cliente in top_clienti %}
+{{ loop.index }}. {{ cliente['cliente'] }} - {{ cliente['accessi'] }} accessi
+{% endfor %}
+
+=== TOP OPERATORI ===
+{% for operatore in top_operatori %}
+{{ loop.index }}. {{ operatore.operatore }} - {{ operatore.accessi }} accessi
+{% endfor %}
+`;
+    
+    downloadTXT(report, 'report_completo.txt');
+}
+
+function downloadCSV(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, filename);
+}
+
+function downloadTXT(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+    downloadBlob(blob, filename);
+}
+
+function downloadBlob(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

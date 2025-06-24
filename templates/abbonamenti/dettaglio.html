@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+
+{% block title %}{{ abbonamento.cliente.nome_completo }} - {{ app_name }}{% endblock %}
+
+{% block header_title %}Dettaglio Abbonamento{% endblock %}
+
+{% block content %}
+<div class="dettaglio-container">
+    
+    <!-- Informazioni Cliente -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>👤 Informazioni Cliente</h2>
+            <div class="stato-badge">
+                {% set stato = abbonamento | stato_abbonamento %}
+                <span class="badge badge-{{ stato.classe }} badge-lg">{{ stato.testo }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Nome Completo:</span>
+                    <span class="value">{{ abbonamento.cliente.nome_completo }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Telefono:</span>
+                    <span class="value">{{ abbonamento.cliente.telefono | telefono }}</span>
+                </div>
+                {% if abbonamento.cliente.email %}
+                <div class="info-item">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ abbonamento.cliente.email }}</span>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <span class="label">Cliente dal:</span>
+                    <span class="value">{{ abbonamento.cliente.data_registrazione | date }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informazioni Abbonamento -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>🚗 Dettagli Abbonamento</h2>
+            <div class="nfc-info">
+                <div class="nfc-code">
+                    <span class="nfc-label">Codice NFC:</span>
+                    <span class="nfc-value">{{ abbonamento.codice_nfc }}</span>
+                </div>
+                <div class="nfc-url">
+                    <span class="nfc-label">URL per tag NFC:</span>
+                    <input type="text" id="nfcUrl" value="{{ abbonamento.url_nfc }}" class="nfc-url-input" readonly>
+                    <button onclick="copyNfcUrl()" class="btn-copy" title="Copia URL">📋</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="highlight-info">
+                <div class="highlight-item">
+                    <span class="highlight-label">Targa</span>
+                    <span class="highlight-value targa">{{ abbonamento.targa | targa }}</span>
+                </div>
+                <div class="highlight-item">
+                    <span class="highlight-label">Tipo</span>
+                    <span class="highlight-value">{{ abbonamento.tipo_abbonamento | title }} {{ abbonamento.tipo_abbonamento | icona_tipo_abbonamento }}</span>
+                </div>
+                <div class="highlight-item">
+                    <span class="highlight-label">Prezzo</span>
+                    <span class="highlight-value">{{ abbonamento.prezzo | currency }}</span>
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Data Inizio:</span>
+                    <span class="value">{{ abbonamento.data_inizio | date }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Data Fine:</span>
+                    <span class="value {% if abbonamento.is_in_scadenza %}warning{% elif abbonamento.is_scaduto %}danger{% endif %}">
+                        {{ abbonamento.data_fine | date }}
+                        {% if abbonamento.is_in_scadenza or abbonamento.is_scaduto %}
+                        <small>({{ abbonamento.giorni_alla_scadenza | giorni_scadenza }})</small>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Stato Pagamento:</span>
+                    <span class="value {{ 'success' if abbonamento.stato_pagamento == 'pagato' else 'warning' }}">
+                        {{ abbonamento.stato_pagamento.replace('_', ' ').title() }}
+                        {% if abbonamento.stato_pagamento == 'pagato' %}✅{% else %}⏳{% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Creato il:</span>
+                    <span class="value">{{ abbonamento.data_creazione | datetime }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiche Accessi -->
+    <div class="info-card">
+        <div class="card-header">
+            <h2>📊 Utilizzo Accessi</h2>
+        </div>
+        <div class="card-body">
+            <div class="accessi-stats">
+                <div class="accessi-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ (abbonamento.accessi_utilizzati / abbonamento.accessi_totali * 100) }}%"></div>
+                    </div>
+                    <div class="progress-label">
+                        {{ abbonamento.accessi_utilizzati }} / {{ abbonamento.accessi_totali }} accessi utilizzati
+                    </div>
+                </div>
+                
+                <div class="accessi-numbers">
+                    <div class="accessi-item totali">
+                        <span class="number">{{ abbonamento.accessi_totali }}</span>
+                        <span class="label">Totali</span>
+                    </div>
+                    <div class="accessi-item utilizzati">
+                        <span class="number">{{ abbonamento.accessi_utilizzati }}</span>
+                        <span class="label">Utilizzati</span>
+                    </div>
+                    <div class="accessi-item rimanenti">
+                        <span class="number {{ abbonamento.colore_accessi }}">{{ abbonamento.accessi_rimanenti }}</span>
+                        <span class="label">Rimanenti</span>
+                    </div>
+                </div>
+            </div>
+            
+            {% if abbonamento.ultimo_accesso %}
+            <div class="ultimo-accesso">
+                <h4>🕐 Ultimo Accesso</h4>
+                <div class="accesso-info">
+                    <span class="data">{{ abbonamento.ultimo_accesso.data_ora | datetime }}</span>
+                    <span class="operatore">Operatore: {{ abbonamento.ultimo_accesso.operatore.nome }}</span>
+                    {% if abbonamento.ultimo_accesso.note %}
+                    <span class="note">Note: {{ abbonamento.ultimo_accesso.note }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Storico Accessi -->
+    {% if accessi %}
+    <div class="info-card">
+        <div class="card-header">
+            <h2>📅 Storico Accessi</h2>
+            <a href="{{ url_for('accessi.storico', search=abbonamento.codice_nfc) }}" class="btn btn-sm btn-secondary">
+                Vedi Tutto
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="accessi-list">
+                {% for accesso in accessi %}
+                <div class="accesso-item">
+                    <div class="accesso-data">
+                        <span class="data">{{ accesso.data_ora | date }}</span>
+                        <span class="ora">{{ accesso.data_ora | datetime('%H:%M') }}</span>
+                    </div>
+                    <div class="accesso-details">
+                        <span class="operatore">{{ accesso.operatore.nome }}</span>
+                        {% if accesso.note %}
+                        <span class="note">{{ accesso.note }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Azioni -->
+    <div class="actions-card">
+        <div class="actions-grid">
+            <a href="{{ url_for('abbonamenti.modifica', id=abbonamento.id) }}" 
+               class="btn btn-primary btn-lg">
+                ✏️ Modifica Abbonamento
+            </a>
+            
+            {% if not abbonamento.is_scaduto %}
+            <form method="POST" action="{{ url_for('abbonamenti.rinnova', id=abbonamento.id) }}" 
+                  style="display: contents;">
+                <button type="submit" class="btn btn-success btn-lg" 
+                        onclick="return confirm('Rinnovare l\'abbonamento?')">
+                    🔄 Rinnova Abbonamento
+                </button>
+            </form>
+            {% endif %}
+            
+            <a href="{{ url_for('stampa.ricevuta', abbonamento_id=abbonamento.id) }}" 
+               class="btn btn-info btn-lg">
+                🖨️ Stampa Ricevuta
+            </a>
+            
+            <a href="{{ url_for('stampa.anteprima', abbonamento_id=abbonamento.id) }}" 
+               class="btn btn-secondary btn-lg" target="_blank">
+                👁️ Anteprima Ricevuta
+            </a>
+            
+            <a href="{{ url_for('abbonamenti.guida_nfc') }}" 
+               class="btn btn-info btn-lg" target="_blank">
+                📱 Guida Programmazione NFC
+            </a>
+            
+            <form method="POST" action="{{ url_for('abbonamenti.elimina', id=abbonamento.id) }}" 
+                  style="display: contents;">
+                <button type="submit" class="btn btn-danger btn-lg" 
+                        onclick="return confirm('Eliminare definitivamente l\'abbonamento?')">
+                    🗑️ Elimina Abbonamento
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Back Button -->
+    <div class="back-actions">
+        <a href="{{ url_for('abbonamenti.index') }}" class="btn btn-secondary">
+            ← Torna alla Lista
+        </a>
+    </div>
+</div>
+
+<style>
+.dettaglio-container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.info-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--gray-900);
+    font-size: 1.25rem;
+}
+
+.badge-lg {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.875rem;
+}
+
+.nfc-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.nfc-code {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-family: monospace;
+}
+
+.nfc-url {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-family: monospace;
+}
+
+.nfc-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    min-width: 120px;
+}
+
+.nfc-value {
+    background: var(--info-color);
+    color: var(--white);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+}
+
+.nfc-url-input {
+    background: var(--success-color);
+    color: var(--white);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: 0.75rem;
+    word-break: break-all;
+    flex: 1;
+    border: none;
+    outline: none;
+    cursor: text;
+}
+
+.btn-copy {
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-copy:hover {
+    background: var(--primary-dark);
+}
+
+.card-body {
+    padding: var(--spacing-lg);
+}
+
+.highlight-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: var(--border-radius);
+}
+
+.highlight-item {
+    text-align: center;
+}
+
+.highlight-label {
+    display: block;
+    font-size: 0.875rem;
+    opacity: 0.8;
+    margin-bottom: var(--spacing-xs);
+}
+
+.highlight-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.highlight-value.targa {
+    font-family: monospace;
+    letter-spacing: 0.1em;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item .label {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.info-item .value {
+    font-weight: 600;
+    color: var(--gray-900);
+    text-align: right;
+}
+
+.info-item .value.success {
+    color: var(--success-color);
+}
+
+.info-item .value.warning {
+    color: var(--warning-color);
+}
+
+.info-item .value.danger {
+    color: var(--danger-color);
+}
+
+.accessi-stats {
+    margin-bottom: var(--spacing-lg);
+}
+
+.accessi-progress {
+    margin-bottom: var(--spacing-lg);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: var(--gray-200);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+    transition: width 0.5s ease;
+}
+
+.progress-label {
+    text-align: center;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.accessi-numbers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+}
+
+.accessi-item {
+    text-align: center;
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+}
+
+.accessi-item .number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+}
+
+.accessi-item .number.success {
+    color: var(--success-color);
+}
+
+.accessi-item .number.warning {
+    color: var(--warning-color);
+}
+
+.accessi-item .number.danger {
+    color: var(--danger-color);
+}
+
+.accessi-item .label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.ultimo-accesso {
+    border-top: 1px solid var(--gray-200);
+    padding-top: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.ultimo-accesso h4 {
+    margin-bottom: var(--spacing-md);
+    color: var(--gray-700);
+}
+
+.accesso-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    background: var(--gray-50);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.accesso-info .data {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.accesso-info .operatore {
+    color: var(--gray-600);
+}
+
+.accesso-info .note {
+    font-style: italic;
+    color: var(--gray-500);
+}
+
+.accessi-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.accesso-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+}
+
+.accesso-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.accesso-data .data {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.accesso-data .ora {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.accesso-details {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+}
+
+.accesso-details .operatore {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.accesso-details .note {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+.actions-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.back-actions {
+    text-align: center;
+}
+
+@media (max-width: 767px) {
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+    
+    .nfc-code {
+        justify-content: center;
+    }
+    
+    .highlight-info {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .info-item .value {
+        text-align: left;
+    }
+    
+    .accessi-numbers {
+        grid-template-columns: 1fr;
+    }
+    
+    .accesso-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    
+    .accesso-details {
+        text-align: left;
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Conferma azioni
+    const confirmButtons = document.querySelectorAll('[onclick*="confirm"]');
+    confirmButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const message = this.onclick.toString().match(/'([^']+)'/)[1];
+            if (!confirm(message)) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Anima progress bar
+    const progressFill = document.querySelector('.progress-fill');
+    if (progressFill) {
+        const width = progressFill.style.width;
+        progressFill.style.width = '0%';
+        setTimeout(() => {
+            progressFill.style.width = width;
+        }, 300);
+    }
+});
+
+// Copia URL NFC
+function copyNfcUrl() {
+    const urlInput = document.getElementById('nfcUrl');
+    const url = urlInput.value;
+    const btn = document.querySelector('.btn-copy');
+    
+    // Prima prova con il metodo moderno
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(() => {
+            showCopySuccess(btn);
+        }).catch(err => {
+            console.error('Errore clipboard API:', err);
+            fallbackCopy(url, btn);
+        });
+    } else {
+        // Fallback per browser non supportati o contesto non sicuro
+        fallbackCopy(url, btn);
+    }
+}
+
+function showCopySuccess(btn) {
+    const originalText = btn.textContent;
+    const originalBg = btn.style.backgroundColor;
+    
+    btn.textContent = '✅';
+    btn.style.backgroundColor = 'var(--success-color)';
+    
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.backgroundColor = originalBg;
+    }, 2000);
+}
+
+function fallbackCopy(url, btn) {
+    // Seleziona e copia dall'input
+    const urlInput = document.getElementById('nfcUrl');
+    
+    try {
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999); // Per mobile
+        
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopySuccess(btn);
+        } else {
+            // Se tutto fallisce, mostra l'URL in un alert
+            prompt('Copia questo URL:', url);
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        prompt('Copia questo URL:', url);
+    }
+}
+</script>
+{% endblock %}

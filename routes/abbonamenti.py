@@ -28,6 +28,10 @@ class ClienteForm(FlaskForm):
         Optional(),
         Email(message='Inserisci un indirizzo email valido')
     ])
+    tipo_cliente = SelectField('Tipo Cliente', choices=[
+        ('privato', 'Privato (1 accesso/giorno)'),
+        ('business', 'Business (accessi illimitati)')
+    ], default='privato')
 
 class AbbonamentoForm(FlaskForm):
     """Form per la creazione/modifica abbonamento"""
@@ -39,6 +43,10 @@ class AbbonamentoForm(FlaskForm):
     cognome = StringField('Cognome', validators=[Optional()])
     telefono = StringField('Telefono', validators=[Optional()])
     email = StringField('Email (facoltativo)', validators=[Optional(), Email()])
+    tipo_cliente = SelectField('Tipo Cliente', choices=[
+        ('privato', 'Privato (1 accesso/giorno)'),
+        ('business', 'Business (accessi illimitati)')
+    ], default='privato', validators=[Optional()])
     
     # Dati abbonamento
     targa = StringField('Targa', validators=[
@@ -163,12 +171,18 @@ def nuovo():
                     flash('Esiste già un cliente con questo numero di telefono', 'error')
                     return render_template('abbonamenti/nuovo.html', form=form)
                 
-                cliente = Cliente(
-                    nome=form.nome.data.strip().title(),
-                    cognome=form.cognome.data.strip().title(),
-                    telefono=telefono_pulito,
-                    email=form.email.data.strip().lower() if form.email.data else None
-                )
+                cliente_data = {
+                    'nome': form.nome.data.strip().title(),
+                    'cognome': form.cognome.data.strip().title(),
+                    'telefono': telefono_pulito,
+                    'email': form.email.data.strip().lower() if form.email.data else None
+                }
+                
+                # Aggiungi tipo_cliente solo se il modello lo supporta
+                if hasattr(Cliente, 'tipo_cliente'):
+                    cliente_data['tipo_cliente'] = form.tipo_cliente.data
+                
+                cliente = Cliente(**cliente_data)
                 db.session.add(cliente)
                 db.session.flush()  # Per ottenere l'ID
             
@@ -190,6 +204,7 @@ def nuovo():
             abbonamento = Abbonamento(
                 cliente_id=cliente.id,
                 targa=targa_pulita,
+                data_inizio=datetime.now().date(),  # Imposta esplicitamente la data di inizio
                 tipo_abbonamento=form.tipo_abbonamento.data,
                 accessi_totali=form.accessi_totali.data,
                 prezzo=form.prezzo.data,
@@ -240,6 +255,7 @@ def modifica(id):
         form.cognome.data = abbonamento.cliente.cognome
         form.telefono.data = abbonamento.cliente.telefono
         form.email.data = abbonamento.cliente.email
+        form.tipo_cliente.data = getattr(abbonamento.cliente, 'tipo_cliente', 'privato')
         form.cliente_id.data = 0  # Non usare cliente esistente
     else:
         form = AbbonamentoForm()
@@ -262,6 +278,8 @@ def modifica(id):
                     abbonamento.cliente.telefono = telefono_pulito
                 if form.email.data:
                     abbonamento.cliente.email = form.email.data.strip().lower()
+                if form.tipo_cliente.data and hasattr(abbonamento.cliente, 'tipo_cliente'):
+                    abbonamento.cliente.tipo_cliente = form.tipo_cliente.data
             
             # Aggiorna abbonamento
             if form.targa.data:
@@ -333,12 +351,17 @@ def rinnova(id):
 @abbonamenti_bp.route('/<int:id>/elimina', methods=['POST'])
 @login_required
 def elimina(id):
-    """Elimina (disattiva) abbonamento"""
+    """Elimina abbonamento"""
     
     abbonamento = Abbonamento.query.get_or_404(id)
     
     try:
-        abbonamento.attivo = False
+        # Prima elimina tutti gli accessi collegati
+        from models import Accesso
+        Accesso.query.filter_by(abbonamento_id=id).delete()
+        
+        # Poi elimina l'abbonamento
+        db.session.delete(abbonamento)
         db.session.commit()
         flash('Abbonamento eliminato', 'success')
         
@@ -370,15 +393,94 @@ def api_cliente_by_telefono(telefono):
     else:
         return jsonify({'found': False})
 
-@abbonamenti_bp.route('/api/prezzi-suggeriti')
+@abbonamenti_bp.route('/nfc/<codice_nfc>')
+def nfc_page(codice_nfc):
+    """Pagina dedicata abbonamento tramite scansione NFC"""
+    
+    # Cerca abbonamento per codice NFC
+    abbonamento = Abbonamento.query.filter_by(
+        codice_nfc=codice_nfc.upper(),
+        attivo=True
+    ).first()
+    
+    if not abbonamento:
+        return render_template('abbonamenti/nfc_non_trovato.html', 
+                             codice_nfc=codice_nfc)
+    
+    # Calcola stato abbonamento
+    stato_ok = not abbonamento.is_scaduto and abbonamento.accessi_rimanenti > 0
+    
+    # Messaggi di avviso
+    messaggi = []
+    if abbonamento.is_scaduto:
+        messaggi.append(f"⚠️ Abbonamento scaduto il {abbonamento.data_fine.strftime('%d/%m/%Y')}")
+    elif abbonamento.is_in_scadenza:
+        messaggi.append(f"⚠️ Abbonamento in scadenza tra {abbonamento.giorni_alla_scadenza} giorni")
+    
+    if abbonamento.accessi_rimanenti <= 2 and abbonamento.accessi_rimanenti > 0:
+        messaggi.append(f"⚠️ Rimangono solo {abbonamento.accessi_rimanenti} accessi")
+    elif abbonamento.accessi_rimanenti == 0:
+        messaggi.append("❌ Accessi esauriti")
+    
+    if abbonamento.stato_pagamento != 'pagato':
+        messaggi.append("💰 Pagamento in sospeso")
+    
+    # Ultimi accessi per la timeline
+    accessi_recenti = abbonamento.accessi[-5:]  # Ultimi 5 accessi
+    
+    return render_template('abbonamenti/nfc_page.html',
+                         abbonamento=abbonamento,
+                         stato_ok=stato_ok,
+                         messaggi=messaggi,
+                         accessi_recenti=accessi_recenti)
+
+@abbonamenti_bp.route('/targa/<targa>')
+def targa_page(targa):
+    """Pagina dedicata abbonamento tramite ricerca targa"""
+    
+    # Cerca abbonamento per targa
+    abbonamento = Abbonamento.query.filter_by(
+        targa=targa.upper(),
+        attivo=True
+    ).filter(
+        Abbonamento.data_fine >= datetime.now().date()
+    ).first()
+    
+    if not abbonamento:
+        return render_template('abbonamenti/targa_non_trovata.html', 
+                             targa=targa.upper())
+    
+    # Calcola stato abbonamento
+    stato_ok = not abbonamento.is_scaduto and abbonamento.accessi_rimanenti > 0
+    
+    # Messaggi di avviso
+    messaggi = []
+    if abbonamento.is_scaduto:
+        messaggi.append(f"⚠️ Abbonamento scaduto il {abbonamento.data_fine.strftime('%d/%m/%Y')}")
+    elif abbonamento.is_in_scadenza:
+        messaggi.append(f"⚠️ Abbonamento in scadenza tra {abbonamento.giorni_alla_scadenza} giorni")
+    
+    if abbonamento.accessi_rimanenti <= 2 and abbonamento.accessi_rimanenti > 0:
+        messaggi.append(f"⚠️ Rimangono solo {abbonamento.accessi_rimanenti} accessi")
+    elif abbonamento.accessi_rimanenti == 0:
+        messaggi.append("❌ Accessi esauriti")
+    
+    if abbonamento.stato_pagamento != 'pagato':
+        messaggi.append("💰 Pagamento in sospeso")
+    
+    # Ultimi accessi per la timeline
+    accessi_recenti = abbonamento.accessi[-5:]  # Ultimi 5 accessi
+    
+    return render_template('abbonamenti/targa_page.html',
+                         abbonamento=abbonamento,
+                         stato_ok=stato_ok,
+                         messaggi=messaggi,
+                         accessi_recenti=accessi_recenti,
+                         ricerca_targa=targa.upper())
+
+@abbonamenti_bp.route('/guida-nfc')
 @login_required
-def api_prezzi_suggeriti():
-    """API per prezzi suggeriti in base al tipo di abbonamento"""
-    
-    prezzi = {
-        'mensile': {'10': 45.00, '15': 60.00, '20': 75.00, '30': 100.00},
-        'trimestrale': {'30': 120.00, '45': 160.00, '60': 200.00, '90': 280.00},
-        'annuale': {'100': 400.00, '150': 550.00, '200': 700.00, '365': 1000.00}
-    }
-    
-    return jsonify(prezzi)
+def guida_nfc():
+    """Guida per la programmazione dei tag NFC"""
+    return render_template('abbonamenti/guida_nfc.html')
+

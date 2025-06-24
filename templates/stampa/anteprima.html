@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Anteprima Stampa - {{ super() }}{% endblock %}
+
+{% block header_title %}🖨️ Anteprima Stampa{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Anteprima Ricevuta</h2>
+        <p>Visualizza l'anteprima prima di stampare</p>
+    </div>
+    
+    <div class="card-body">
+        <div class="preview-section">
+            <div class="preview-controls">
+                <button onclick="window.print()" class="btn btn-primary">
+                    🖨️ Stampa
+                </button>
+                <button onclick="window.history.back()" class="btn btn-secondary">
+                    ← Indietro
+                </button>
+                <button onclick="togglePreviewSize()" class="btn btn-secondary" id="sizeToggle">
+                    📏 Dimensione Reale
+                </button>
+            </div>
+            
+            <div class="preview-container" id="previewContainer">
+                <div class="print-preview" id="printPreview">
+                    {{ ricevuta_html|safe }}
+                </div>
+            </div>
+        </div>
+        
+        {% if abbonamento %}
+        <div class="abbonamento-info">
+            <h3>Dettagli Abbonamento</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Cliente:</strong> {{ abbonamento.nome }} {{ abbonamento.cognome }}
+                </div>
+                <div class="info-item">
+                    <strong>Tipo:</strong> {{ abbonamento.tipo_abbonamento }}
+                </div>
+                {% if abbonamento.targa %}
+                <div class="info-item">
+                    <strong>Targa:</strong> {{ abbonamento.targa }}
+                </div>
+                {% endif %}
+                {% if abbonamento.numero_tessera %}
+                <div class="info-item">
+                    <strong>Tessera:</strong> {{ abbonamento.numero_tessera }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.preview-section {
+    margin-bottom: 2rem;
+}
+
+.preview-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.preview-container {
+    border: 2px dashed #ddd;
+    padding: 2rem;
+    background: #f9f9f9;
+    text-align: center;
+    min-height: 400px;
+    overflow: auto;
+}
+
+.print-preview {
+    display: inline-block;
+    background: white;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: pre-wrap;
+    text-align: left;
+    max-width: 80mm;
+    min-height: 200px;
+}
+
+.print-preview.full-size {
+    transform: scale(1.5);
+    margin: 2rem;
+}
+
+.abbonamento-info {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #ddd;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.info-item {
+    padding: 0.5rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+@media print {
+    .card-header,
+    .preview-controls,
+    .abbonamento-info,
+    .nav-menu,
+    .header {
+        display: none !important;
+    }
+    
+    .preview-container {
+        border: none;
+        padding: 0;
+        background: white;
+    }
+    
+    .print-preview {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        transform: none !important;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .preview-controls {
+        justify-content: center;
+    }
+    
+    .print-preview {
+        font-size: 10px;
+    }
+}
+</style>
+
+<script>
+function togglePreviewSize() {
+    const preview = document.getElementById('printPreview');
+    const button = document.getElementById('sizeToggle');
+    
+    if (preview.classList.contains('full-size')) {
+        preview.classList.remove('full-size');
+        button.textContent = '📏 Dimensione Reale';
+    } else {
+        preview.classList.add('full-size');
+        button.textContent = '📏 Dimensione Normale';
+    }
+}
+</script>
+{% endblock %}

@@ -122,7 +122,15 @@ def registra():
                 elif abbonamento.accessi_rimanenti <= 2:
                     flash(f'Attenzione: rimangono solo {abbonamento.accessi_rimanenti} accessi', 'info')
             else:
-                flash('Errore durante la registrazione dell\'accesso', 'error')
+                # Verifica perché l'accesso è stato rifiutato
+                if abbonamento.accessi_rimanenti <= 0:
+                    flash('Accesso negato: accessi esauriti!', 'error')
+                elif abbonamento.is_scaduto:
+                    flash('Accesso negato: abbonamento scaduto!', 'error')
+                elif getattr(abbonamento.cliente, 'tipo_cliente', 'privato') == 'privato' and abbonamento.cliente.ha_accesso_oggi():
+                    flash('Accesso negato: cliente privato ha già effettuato un accesso oggi!', 'warning')
+                else:
+                    flash('Errore durante la registrazione dell\'accesso', 'error')
                 
         except Exception as e:
             db.session.rollback()
@@ -144,7 +152,11 @@ def storico():
     per_page = 50
     
     # Query base
-    query = Accesso.query.join(Abbonamento).join(Cliente)
+    query = Accesso.query.join(
+        Abbonamento, Accesso.abbonamento_id == Abbonamento.id
+    ).join(
+        Cliente, Abbonamento.cliente_id == Cliente.id
+    )
     
     # Filtro per ricerca
     if search:
@@ -285,10 +297,24 @@ def api_registra_accesso():
             })
         
         # Verifica stato
-        if abbonamento.is_scaduto or abbonamento.accessi_rimanenti == 0:
+        if abbonamento.is_scaduto:
             return jsonify({
                 'success': False,
-                'message': 'Impossibile registrare accesso'
+                'message': 'Abbonamento scaduto'
+            })
+        
+        if abbonamento.accessi_rimanenti <= 0:
+            return jsonify({
+                'success': False,
+                'message': 'Accessi esauriti'
+            })
+        
+        # Verifica limite giornaliero per clienti normali
+        tipo_cliente = getattr(abbonamento.cliente, 'tipo_cliente', 'normale')
+        if tipo_cliente == 'normale' and abbonamento.cliente.ha_accesso_oggi():
+            return jsonify({
+                'success': False,
+                'message': 'Cliente normale: già un accesso oggi'
             })
         
         # Registra accesso
@@ -321,3 +347,109 @@ def api_registra_accesso():
 def rapido():
     """Pagina per accesso rapido (solo input NFC)"""
     return render_template('accessi/rapido.html')
+
+@accessi_bp.route('/api/verifica-unified')
+@login_required
+def api_verifica_unified():
+    """API unificata per verifica tramite NFC o targa"""
+    
+    nfc_code = request.args.get('nfc', '').upper().strip()
+    targa = request.args.get('targa', '').upper().strip()
+    
+    abbonamento = None
+    search_type = None
+    search_value = None
+    
+    # Cerca per codice NFC
+    if nfc_code:
+        if len(nfc_code) != 8:
+            return jsonify({
+                'success': False,
+                'message': 'Codice NFC non valido (deve essere di 8 caratteri)',
+                'search_type': 'nfc',
+                'search_value': nfc_code
+            })
+        
+        abbonamento = Abbonamento.query.filter_by(
+            codice_nfc=nfc_code,
+            attivo=True
+        ).first()
+        search_type = 'nfc'
+        search_value = nfc_code
+        
+    # Cerca per targa
+    elif targa:
+        if len(targa) < 5:
+            return jsonify({
+                'success': False,
+                'message': 'Targa non valida (minimo 5 caratteri)',
+                'search_type': 'targa',
+                'search_value': targa
+            })
+        
+        abbonamento = Abbonamento.query.filter_by(
+            targa=targa,
+            attivo=True
+        ).filter(
+            Abbonamento.data_fine >= datetime.now().date()
+        ).first()
+        search_type = 'targa'
+        search_value = targa
+        
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Specificare codice NFC o targa'
+        })
+    
+    if not abbonamento:
+        message = f"{'Codice NFC' if search_type == 'nfc' else 'Targa'} non trovato"
+        return jsonify({
+            'success': False,
+            'message': message,
+            'search_type': search_type,
+            'search_value': search_value
+        })
+    
+    # Verifica stato
+    stato_ok = not abbonamento.is_scaduto and abbonamento.accessi_rimanenti > 0
+    
+    # Messaggi di avviso
+    messaggi = []
+    if abbonamento.is_scaduto:
+        messaggi.append(f"Abbonamento scaduto il {abbonamento.data_fine.strftime('%d/%m/%Y')}")
+    elif abbonamento.is_in_scadenza:
+        messaggi.append(f"In scadenza tra {abbonamento.giorni_alla_scadenza} giorni")
+    
+    if abbonamento.accessi_rimanenti <= 2 and abbonamento.accessi_rimanenti > 0:
+        messaggi.append(f"Rimangono solo {abbonamento.accessi_rimanenti} accessi")
+    elif abbonamento.accessi_rimanenti == 0:
+        messaggi.append("Accessi esauriti")
+    
+    if abbonamento.stato_pagamento != 'pagato':
+        messaggi.append("Pagamento in sospeso")
+    
+    return jsonify({
+        'success': True,
+        'stato_ok': stato_ok,
+        'messaggi': messaggi,
+        'search_type': search_type,
+        'search_value': search_value,
+        'abbonamento': {
+            'id': abbonamento.id,
+            'cliente': abbonamento.cliente.nome_completo,
+            'targa': abbonamento.targa,
+            'codice_nfc': abbonamento.codice_nfc,
+            'tipo_abbonamento': abbonamento.tipo_abbonamento,
+            'accessi_rimanenti': abbonamento.accessi_rimanenti,
+            'accessi_totali': abbonamento.accessi_totali,
+            'accessi_utilizzati': abbonamento.accessi_utilizzati,
+            'giorni_scadenza': abbonamento.giorni_alla_scadenza,
+            'is_scaduto': abbonamento.is_scaduto,
+            'is_in_scadenza': abbonamento.is_in_scadenza,
+            'colore_accessi': abbonamento.colore_accessi,
+            'ultimo_accesso': {
+                'data_ora': abbonamento.ultimo_accesso.data_ora.strftime('%d/%m/%Y %H:%M')
+            } if abbonamento.ultimo_accesso else None
+        }
+    })
