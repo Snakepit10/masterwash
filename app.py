@@ -16,7 +16,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///masterwash.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['WTF_CSRF_ENABLED'] = True
-    app.config['BASE_URL'] = os.environ.get('BASE_URL', 'https://masterwash.up.railway.app')
+    app.config['BASE_URL'] = os.environ.get('BASE_URL', 'http://192.168.1.84:5000')
     
     # Fix per Railway PostgreSQL URL
     if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
