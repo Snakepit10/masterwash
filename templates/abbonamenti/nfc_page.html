@@ -7,17 +7,36 @@
 <div class="nfc-access-container">
     
     <!-- Status Header -->
-    <div class="status-header {% if not stato_ok %}status-error{% else %}status-success{% endif %}">
+    <div class="status-header {% if not stato_ok %}status-error{% else %}status-success{% endif %} status-{{ stato_tipo }}">
         <div class="status-content">
             <div class="status-icon">
                 {% if stato_ok %}
                     <span class="icon success">✅</span>
-                    <h1>Accesso Consentito</h1>
+                    <h1>{{ stato_messaggio }}</h1>
                 {% else %}
-                    <span class="icon error">❌</span>
-                    <h1>Accesso Negato</h1>
+                    {% if stato_tipo == 'scaduto' %}
+                        <span class="icon error">⏰</span>
+                        <h1>{{ stato_messaggio }}</h1>
+                    {% elif stato_tipo == 'esaurito' %}
+                        <span class="icon error">🚫</span>
+                        <h1>{{ stato_messaggio }}</h1>
+                    {% elif stato_tipo == 'limite_giornaliero' %}
+                        <span class="icon warning">⏱️</span>
+                        <h1>{{ stato_messaggio }}</h1>
+                    {% elif stato_tipo == 'non_pagato' %}
+                        <span class="icon warning">💳</span>
+                        <h1>{{ stato_messaggio }}</h1>
+                    {% else %}
+                        <span class="icon error">❌</span>
+                        <h1>Accesso Negato</h1>
+                    {% endif %}
                 {% endif %}
             </div>
+            {% if motivo_blocco %}
+            <div class="status-reason">
+                <p>{{ motivo_blocco }}</p>
+            </div>
+            {% endif %}
             <div class="nfc-info">
                 <span class="nfc-label">Codice NFC:</span>
                 <span class="nfc-code">{{ abbonamento.codice_nfc }}</span>
@@ -229,6 +248,22 @@
     background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
 }
 
+.status-header.status-scaduto {
+    background: linear-gradient(135deg, #9333ea, #7c3aed);
+}
+
+.status-header.status-esaurito {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.status-header.status-limite_giornaliero {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.status-header.status-non_pagato {
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+}
+
 .status-content {
     display: flex;
     flex-direction: column;
@@ -245,6 +280,21 @@
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
+}
+
+.status-reason {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    border-left: 4px solid rgba(255, 255, 255, 0.5);
+}
+
+.status-reason p {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    opacity: 0.95;
 }
 
 .nfc-info {

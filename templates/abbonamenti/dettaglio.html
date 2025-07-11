@@ -305,30 +305,51 @@
 .nfc-url-input {
     background: var(--success-color);
     color: var(--white);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius);
-    font-weight: 500;
-    font-size: 0.75rem;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    font-weight: 600;
+    font-size: 1.1rem;
     word-break: break-all;
     flex: 1;
     border: none;
     outline: none;
     cursor: text;
+    min-height: 50px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.nfc-url-input:focus {
+    background: #059669;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-copy {
     background: var(--primary-color);
     color: var(--white);
     border: none;
-    border-radius: var(--border-radius);
-    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
     cursor: pointer;
-    font-size: 0.875rem;
-    transition: background-color var(--transition-fast);
+    font-size: 1.2rem;
+    font-weight: 600;
+    min-height: 50px;
+    min-width: 80px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-copy:hover {
     background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .card-body {

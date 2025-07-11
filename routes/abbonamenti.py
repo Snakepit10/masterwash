@@ -248,9 +248,13 @@ def modifica(id):
     
     abbonamento = Abbonamento.query.get_or_404(id)
     
+    # Popola select clienti
+    clienti = Cliente.query.filter_by(attivo=True).order_by(Cliente.cognome, Cliente.nome).all()
+    
     if request.method == 'GET':
         # Pre-popola form con dati esistenti
         form = AbbonamentoForm(obj=abbonamento)
+        form.cliente_id.choices = [(0, 'Nuovo Cliente')] + [(c.id, f"{c.nome_completo} - {c.telefono}") for c in clienti]
         form.nome.data = abbonamento.cliente.nome
         form.cognome.data = abbonamento.cliente.cognome
         form.telefono.data = abbonamento.cliente.telefono
@@ -259,6 +263,7 @@ def modifica(id):
         form.cliente_id.data = 0  # Non usare cliente esistente
     else:
         form = AbbonamentoForm()
+        form.cliente_id.choices = [(0, 'Nuovo Cliente')] + [(c.id, f"{c.nome_completo} - {c.telefono}") for c in clienti]
     
     if form.validate_on_submit():
         try:
@@ -407,23 +412,47 @@ def nfc_page(codice_nfc):
         return render_template('abbonamenti/nfc_non_trovato.html', 
                              codice_nfc=codice_nfc)
     
-    # Calcola stato abbonamento
-    stato_ok = not abbonamento.is_scaduto and abbonamento.accessi_rimanenti > 0
+    # Determina stato specifico dell'abbonamento
+    stato_ok = True
+    stato_tipo = 'attivo'
+    stato_messaggio = 'Abbonamento Attivo'
+    motivo_blocco = None
     
-    # Messaggi di avviso
-    messaggi = []
+    # Verifica limite giornaliero per clienti privati
+    tipo_cliente = getattr(abbonamento.cliente, 'tipo_cliente', 'privato')
+    ha_accesso_oggi = abbonamento.cliente.ha_accesso_oggi() if tipo_cliente == 'privato' else False
+    
+    # Controlli di stato in ordine di priorità
     if abbonamento.is_scaduto:
-        messaggi.append(f"⚠️ Abbonamento scaduto il {abbonamento.data_fine.strftime('%d/%m/%Y')}")
-    elif abbonamento.is_in_scadenza:
-        messaggi.append(f"⚠️ Abbonamento in scadenza tra {abbonamento.giorni_alla_scadenza} giorni")
-    
-    if abbonamento.accessi_rimanenti <= 2 and abbonamento.accessi_rimanenti > 0:
-        messaggi.append(f"⚠️ Rimangono solo {abbonamento.accessi_rimanenti} accessi")
+        stato_ok = False
+        stato_tipo = 'scaduto'
+        stato_messaggio = 'Abbonamento Scaduto'
+        motivo_blocco = f"Scaduto il {abbonamento.data_fine.strftime('%d/%m/%Y')}"
     elif abbonamento.accessi_rimanenti == 0:
-        messaggi.append("❌ Accessi esauriti")
+        stato_ok = False
+        stato_tipo = 'esaurito'
+        stato_messaggio = 'Accessi Esauriti'
+        motivo_blocco = "Numero di accessi terminato"
+    elif ha_accesso_oggi:
+        stato_ok = False
+        stato_tipo = 'limite_giornaliero'
+        stato_messaggio = 'Limite Giornaliero Raggiunto'
+        motivo_blocco = "Cliente privato: già un accesso oggi"
+    elif abbonamento.stato_pagamento != 'pagato':
+        stato_ok = False
+        stato_tipo = 'non_pagato'
+        stato_messaggio = 'Pagamento in Sospeso'
+        motivo_blocco = "Abbonamento non ancora pagato"
     
-    if abbonamento.stato_pagamento != 'pagato':
-        messaggi.append("💰 Pagamento in sospeso")
+    # Messaggi di avviso aggiuntivi
+    messaggi = []
+    if stato_ok:
+        if abbonamento.is_in_scadenza:
+            messaggi.append(f"⚠️ Abbonamento in scadenza tra {abbonamento.giorni_alla_scadenza} giorni")
+        if abbonamento.accessi_rimanenti <= 2:
+            messaggi.append(f"⚠️ Rimangono solo {abbonamento.accessi_rimanenti} accessi")
+        if tipo_cliente == 'privato':
+            messaggi.append("ℹ️ Cliente privato: limite 1 accesso/giorno")
     
     # Ultimi accessi per la timeline
     accessi_recenti = abbonamento.accessi[-5:]  # Ultimi 5 accessi
@@ -431,6 +460,9 @@ def nfc_page(codice_nfc):
     return render_template('abbonamenti/nfc_page.html',
                          abbonamento=abbonamento,
                          stato_ok=stato_ok,
+                         stato_tipo=stato_tipo,
+                         stato_messaggio=stato_messaggio,
+                         motivo_blocco=motivo_blocco,
                          messaggi=messaggi,
                          accessi_recenti=accessi_recenti)
 
